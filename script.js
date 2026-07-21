@@ -29,7 +29,7 @@ const PIPELINE = [{
 }, {
   key: 'ready',
   label: 'Grades Ready',
-  desc: 'Your grades are ready to be revealed.'
+  desc: 'Your order is ready for Grade Reveal.'
 }, {
   key: 'completing',
   label: 'Completing',
@@ -37,9 +37,12 @@ const PIPELINE = [{
 }, {
   key: 'complete',
   label: 'Ready for Pickup',
-  desc: 'Your order is complete and ready for pickup at HobbyX Store.'
+  desc: 'Your order is ready for pickup at Mongkok Store.'
 }];
 const STEP_INDEX = Object.fromEntries(PIPELINE.map((s, i) => [s.key, i]));
+function isOrderPreDetail(order) {
+  return !!(order && order.status === 'arrived');
+}
 function progressFor(key) {
   return STEP_INDEX[key] / (PIPELINE.length - 1);
 }
@@ -624,7 +627,7 @@ const SORTS = [{
 const STATUS_FILTERS = [{
   key: 'all',
   label: 'All Statuses'
-}, ...['research', 'grading', 'assembly', 'ready', 'completing'].map(k => ({
+}, ...['arrived', 'research', 'grading', 'assembly', 'ready', 'completing'].map(k => ({
   key: k,
   label: PIPELINE[STEP_INDEX[k]].label
 }))];
@@ -649,8 +652,8 @@ const NOTIFICATIONS = [{
 }, {
   id: 'n3',
   icon: 'truck',
-  title: 'Order shipped',
-  body: 'Super Express Order is on the way.',
+  title: 'Ready for Pickup',
+  body: 'Your order Super Express Order is ready for pickup.',
   ship: 'August 24 - 1st Shipment',
   time: '3d ago',
   unread: false,
@@ -684,10 +687,7 @@ const ACCOUNT = {
     items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell']]
   }, {
     group: 'Support',
-    items: [['Help Centre', 'help'], ['Terms & Policies', 'doc']]
-  }, {
-    group: 'Session',
-    items: [['Sign Out', 'signout']]
+    items: [['Help Centre', 'help'], ['Terms & Policies', 'doc'], ['Contact Us', 'mail'], ['Sign Out', 'signout']]
   }, {
     group: 'Remove Account',
     items: [['Delete Account', 'trash']]
@@ -829,7 +829,7 @@ const ZH = {
   'Your account has been scheduled for deletion. A reactivation link has been sent to': '你的帳戶已安排刪除。重新啟用連結已傳送至',
   'This link is valid for 30 days.': '此連結有效期為 30 天。',
   'What will be deleted': '將被刪除的資料',
-  'Your profile, saved cards, preferences, and other personal data associated with your account.': '你的個人資料、已儲存卡牌、偏好設定及其他與帳戶相關的個人資料。',
+  'Your profile, preferences, and other personal data associated with your account.': '你的個人資料、偏好設定及其他與帳戶相關的個人資料。',
   'Data we may retain': '可能保留的資料',
   'Certain transaction records may be retained where required for legal, tax, or accounting purposes. Such records will not be used for marketing.': '基於法律、稅務或會計需要，部分交易記錄可能會被保留，且不會用於市場推廣。',
   'Confirmation required': '須予確認',
@@ -867,6 +867,12 @@ const ZH = {
   'PSA labels are being printed and each eligible item is being sonically sealed within a PSA holder.': 'PSA 標籤正在印製，每件符合資格的物品正被超聲波封入 PSA 保護殼。',
   'A final quality check is performed on every slab before it ships.': '每個封裝在寄出前都會進行最終品質檢查。',
   'Your grades are ready to be revealed.': '你的評級結果已可揭曉。',
+  'Your order is ready for Grade Reveal.': '你的訂單已可進行評級揭曉。',
+  'Your order is ready for pickup at Mongkok Store.': '你的訂單已可在旺角店取貨。',
+  'Ready for Pickup at Mongkok Store': '可到旺角店取貨',
+  'No orders ready for pickup yet': '目前沒有可供取回的訂單',
+  'Graded cards ready for collection will appear here.': '已評級並可供領取的卡牌會在此顯示。',
+  'System': '系統',
   'Your order has been completed. You’ll receive an email when cards are ready for pickup at HobbyX Store.': '你的訂單已完成。當卡牌可於 HobbyX 門市取貨時，你將收到電子郵件通知。',
   'Your order is complete and on its way to you.': '你的訂單已完成，正在寄送途中。',
   'Login successful': '登入成功',
@@ -896,7 +902,8 @@ const ZH = {
   'Now grading': '正在評級',
   'Regular Order moved to Grading.': '標準訂單已進入評級階段。',
   'Order shipped': '訂單已寄出',
-  'Super Express Order is on the way.': '特快訂單正在寄送途中。',
+  'Ready for Pickup': '可供取貨',
+  'Your order Super Express Order is ready for pickup.': '你的 Super Express Order 訂單已可供取貨。',
   'Order arrived': '訂單已到達',
   'Walk Through Crossover arrived at the facility.': 'Walk Through Crossover 已送達評級中心。',
   '2h ago': '2 小時前',
@@ -906,7 +913,39 @@ const ZH = {
   // —— auth UX: validation / password / phone ——
   'Demo login': '示範登入',
   'Only numbers are allowed.': '只允許輸入數字。',
+  'Incorrect email or password. Please try again.': '電郵或密碼不正確，請再試一次。',
+  'NOT GRADED': '未評級',
   'No internet connection. Check your network and try again.': '沒有網絡連線。請檢查你的網絡後再試一次。',
+  'Back to Login': '返回登入',
+  'Account scheduled for deletion': '帳戶已安排刪除',
+  'Your account is in a 30-day grace period. After that, your profile and personal data will be permanently removed.': '你的帳戶處於 30 天寬限期。之後，你的個人資料及相關資料將被永久刪除。',
+  'Scheduled for {{date}} ({{days}} days remaining).': '已安排於 {{date}} 刪除（尚餘 {{days}} 天）。',
+  'A reactivation link was also sent to': '重新啟用連結亦已傳送至',
+  'Reactivate account': '重新啟用帳戶',
+  'Enable motion effects?': '啟用動態效果？',
+  "HobbyX uses your device's motion sensors (Physical activity) to add a 3D tilt and shine effect when your graded cards are revealed. No activity data is recorded or shared. You can skip this and still reveal your cards.": 'HobbyX 會使用你裝置的動態感應器（體能活動）在評級揭曉時加入 3D 傾斜及光澤效果。不會記錄或分享任何活動數據。你仍可跳過此步驟並繼續揭曉卡牌。',
+  'Allow motion': '允許動態效果',
+  'Not now': '暫不',
+  'Verification email sent.': '已傳送驗證電郵。',
+  'Resend available in {{time}}': '{{time}} 後可重新傳送',
+  'resend verification email': '重新傳送驗證電郵',
+  'Account pending approval': '帳戶待審批',
+  'Account could not be activated': '帳戶無法啟用',
+  "Your account is waiting for approval. We'll email you when it's ready.": '你的帳戶正在等待審批。準備就緒後我們會電郵通知你。',
+  'Your account could not be activated.': '你的帳戶無法啟用。',
+  'Check your email and tap the activation link before signing in.': '請查看電郵並在登入前點按啟用連結。',
+  'View fullscreen': '全螢幕查看',
+  'Save': '儲存',
+  'Share': '分享',
+  'Saved to Photos': '已儲存至相片',
+  'Shared': '已分享',
+  "Couldn't save image. Please try again.": '無法儲存圖片，請再試一次。',
+  "Couldn't share image. Please try again.": '無法分享圖片，請再試一次。',
+  'No image available': '沒有可用的圖片',
+  'Unverified': '未驗證',
+  'Account deletion has been cancelled.': '帳戶刪除已取消。',
+  'Demo': '示範',
+  'Close': '關閉',
   'Passwords match': '密碼相符',
   'Password strength': '密碼強度',
   'Weak': '弱',
@@ -1007,6 +1046,21 @@ const ZH = {
   'Final legal text will be supplied by HobbyX and Volk Innovatives before launch — covering how grading order data, account details and contact information are collected, stored and used.': '最終法律條文將由 HobbyX 及 Volk Innovatives 於推出前提供，內容涵蓋評級訂單資料、帳戶詳情及聯絡資訊如何被收集、儲存及使用。',
   'This screen exists so the link target is wired and reviewable in the prototype.': '此畫面用於連結原型中的目標頁面，方便檢視。',
   // —— register verification ——
+  'Contact Us': '聯絡我們',
+  'Sign out?': '登出？',
+  "You'll need to log in again to access your account.": '你需要重新登入才能存取你的帳戶。',
+  "You've reached the end of your grading orders.": '你已瀏覽所有評級訂單。',
+  "You've reached the end of your notifications.": '你已瀏覽所有通知。',
+  'Check your email': '查看你的電郵',
+  'If an account matches': '如有符合的帳戶',
+  ", we've sent a link to verify your email.": '，我們已發送連結以驗證你的電郵。',
+  'Note:': '備註：',
+  'Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.': '掃描影像由 PSA 提供。輕微刮痕可能是外層保護殼上的反光；請以最終評級為準。',
+  'Both': '雙面',
+  'Swipe to tear': '滑動撕開',
+  'Swipe across the light': '在光線上滑動',
+  'Cookie Policy': 'Cookie 政策',
+  'Account info': '帳戶資料',
   'Verify your email': '驗證你的電郵',
   'We’ve sent a verification link to': '我們已傳送驗證連結至',
   'Please check your inbox and click the link to activate your account.': '請查看你的收件匣，並點擊連結以啟用你的帳戶。',
@@ -1310,11 +1364,45 @@ function LangToggle({
     d: "m6 9 6 6 6-6"
   }))));
 }
+const APPEARANCE_PREFS = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
+function AppearanceSelect({
+  value,
+  onChange,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: 'inline-flex items-center ' + className
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative inline-flex items-center"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: value,
+    onChange: e => onChange(e.target.value),
+    "aria-label": tx('Appearance'),
+    style: {
+      minWidth: '6.5rem'
+    },
+    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
+  }, APPEARANCE_PREFS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: k
+  }, tx(l)))), /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "m6 9 6 6 6-6"
+  }))));
+}
 Object.assign(window, {
   tx,
   useLang,
   setLang,
-  LangToggle
+  LangToggle,
+  AppearanceSelect
 });
 
 /* ===== app2/icons.jsx ===== */
@@ -1538,6 +1626,37 @@ const Icon = {
     d: "M12 15V3m0 0-4 4m4-4 4 4"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+  })),
+  download: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("path", {
+    d: "M12 3v12"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m7 10 5 5 5-5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5 21h14"
+  })),
+  expand: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("path", {
+    d: "M15 3h6v6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m21 3-7 7"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 21H3v-6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m3 21 7-7"
+  })),
+  device: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("rect", {
+    x: "7",
+    y: "2",
+    width: "10",
+    height: "20",
+    rx: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M11 18h2"
   })),
   vault: /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24"
@@ -2298,6 +2417,7 @@ function Stepper({
     const future = i > current && !isComplete;
     const last = i === PIPELINE.length - 1;
     const date = order.dates && order.dates[s.key];
+    const showDate = (s.key === 'arrived' || s.key === 'completing') && i <= current && date;
     return /*#__PURE__*/React.createElement("div", {
       key: s.key,
       className: "grid grid-cols-[24px_1fr_auto] gap-x-3.5"
@@ -2318,15 +2438,13 @@ function Stepper({
       className: "pb-5"
     }, /*#__PURE__*/React.createElement("div", {
       className: 'text-[15px] ' + (last && isComplete ? 'font-bold text-success' : future ? 'font-medium text-muted-foreground' : 'font-semibold text-foreground')
-    }, tx(s.label)), active && /*#__PURE__*/React.createElement("div", {
+    }, tx(s.label)), active && !isComplete && /*#__PURE__*/React.createElement("div", {
       className: "mt-1 text-[13px] leading-snug text-muted-foreground"
     }, tx(s.desc))), /*#__PURE__*/React.createElement("div", {
       className: 'pt-1 text-[12px] font-medium whitespace-nowrap ' + (last && isComplete ? 'text-success' : 'text-muted-foreground')
-    }, date || ''));
+    }, showDate ? date : ''));
   }));
 }
-
-/* Persistent footer credit — shows on every screen */
 function FooterCredit() {
   return /*#__PURE__*/React.createElement("div", {
     className: "flex shrink-0 flex-col items-center justify-center gap-0.5 border-t border-border bg-background pt-2 pb-4"
@@ -2691,7 +2809,7 @@ function ListScreen({
   }, [highlightId]);
   const base = empty ? [] : gradingOnly ? tab === 'completed' ? ORDERS.filter(o => o.group === 'completed') : [] : ORDERS.filter(o => tab === 'completed' ? o.group === 'completed' : o.group === 'progress');
   let rows = base;
-  if (q.trim()) rows = rows.filter(o => (o.name + ' ' + o.category).toLowerCase().includes(q.toLowerCase()));
+  if (q.trim()) rows = rows.filter(o => (o.service + ' ' + (o.shipment || '')).toLowerCase().includes(q.toLowerCase()));
   if (tab === 'progress' && statusF !== 'all') rows = rows.filter(o => o.status === statusF);
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
   const filtered = q.trim() || statusF !== 'all';
@@ -2797,15 +2915,16 @@ function ListScreen({
     body: tx('Try a different search term or status filter.')
   }) : /*#__PURE__*/React.createElement(EmptyState, {
     icon: "inbox",
-    title: tab === 'completed' ? tx('No completed orders yet') : tx('No orders in progress'),
-    body: tab === 'completed' ? tx('Graded orders you receive back will appear here.') : tx('Submit cards for grading and track their progress here.')
+    title: tab === 'completed' ? tx('No orders ready for pickup yet') : tx('No orders in progress'),
+    body: tab === 'completed' ? tx('Graded cards ready for collection will appear here.') : tx('Submit cards for grading and track their progress here.')
   })), rows.map(o => {
     const pct = Math.round(progressFor(o.status) * 100);
     const oReady = o.items.some(it => it.grade || it.img || it.slab);
+    const preDetail = isOrderPreDetail(o);
     return /*#__PURE__*/React.createElement("button", {
       key: o.id,
-      onClick: () => o.locked ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
-      className: 'group flex w-full items-center gap-4 rounded-lg border border-border bg-[#F5F6F8] p-3 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (o.locked ? (highlightId === o.id ? '' : 'opacity-60 ') + 'active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
+      onClick: () => preDetail ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
+      className: 'group flex w-full items-center gap-4 rounded-lg border border-border bg-[#F5F6F8] p-3 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (preDetail ? 'active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
     }, o.group === 'completed' ? /*#__PURE__*/React.createElement(Slab, {
       item: o.items[0],
       className: "h-[84px] w-[60px] shrink-0 shadow-sm",
@@ -2826,12 +2945,12 @@ function ListScreen({
       style: {
         fontSize: "13px"
       }
-    }, (o.shipment || tx(o.category)) + (oReady ? ' · ' + o.itemCount + ' ' + tx(o.itemCount === 1 ? 'item' : 'items') : '')), o.locked && /*#__PURE__*/React.createElement("div", {
+    }, (o.shipment || tx(o.category)) + (oReady ? ' · ' + o.itemCount + ' ' + tx(o.itemCount === 1 ? 'item' : 'items') : '')), preDetail && /*#__PURE__*/React.createElement("div", {
       className: "mt-2 flex"
     }, /*#__PURE__*/React.createElement(Badge, {
       intent: "neutral",
       className: "shrink-0"
-    }, tx('Order Arrived'))), !o.locked && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
+    }, tx('Order Arrived'))), !preDetail && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex"
@@ -2857,10 +2976,12 @@ function ListScreen({
       className: "mt-2.5 text-[13px] font-medium leading-snug text-muted-foreground"
     }, tx('Completion date'), ": ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-foreground"
-    }, o.completedOn)))), !o.locked && /*#__PURE__*/React.createElement("span", {
+    }, o.completedOn)))), !preDetail && /*#__PURE__*/React.createElement("span", {
       className: "h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
     }, Icon.chevR));
-  })), (empty || gradingOnly && tab === 'progress') && /*#__PURE__*/React.createElement("div", {
+  })), rows.length > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "pb-3 text-center text-[12px] font-medium text-muted-foreground"
+  }, tx("You've reached the end of your grading orders.")), (empty || gradingOnly && tab === 'progress') && /*#__PURE__*/React.createElement("div", {
     className: "shrink-0 border-t border-border px-5 pt-3 pb-5"
   }, /*#__PURE__*/React.createElement("a", {
     href: "https://hobbyxstore.com/pages/hobbyx-grading-submission-services",
@@ -2914,7 +3035,7 @@ function DetailScreen({
   const _ed = order.est ? new Date(order.est) : null;
   const daysEarly = _cd && _ed ? Math.round((_ed - _cd) / 86400000) : 0;
   const aheadOfSchedule = completed && daysEarly > 0;
-  const behind = !completed && !order.locked && _ed && _ed < TODAY;
+  const behind = !completed && !isOrderPreDetail(order) && _ed && _ed < TODAY;
   // move the service name into the header once it scrolls out of view
   const detailScrollRef = React.useRef(null);
   const [showHdrTitle, setShowHdrTitle] = useStateG(false);
@@ -2975,10 +3096,12 @@ function DetailScreen({
   }), /*#__PURE__*/React.createElement("div", {
     className: "absolute right-3 top-full z-30 mt-1.5 w-[228px] rounded-xl bg-neutral-800 p-3.5 text-[12px] font-medium leading-relaxed text-white shadow-xl dark:bg-neutral-700"
   }, tx('Estimated completion date is calculated based your service level and its turnaround time in number of business days. The date will calculate once your order is entered into PSA Grading system and is not guaranteed.')))))), completed && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 flex items-center gap-1.5 text-sm font-bold text-success"
+    className: "mt-4 flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4"
-  }, Icon.check), tx('Completion date'), " : ", order.completedOn), imagesReady && /*#__PURE__*/React.createElement("div", {
+    className: "h-4 w-4 text-success"
+  }, Icon.check), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold text-success"
+  }, tx('Ready for Pickup at Mongkok Store'))), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-6 flex w-full items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-base font-bold text-foreground"
@@ -3075,7 +3198,7 @@ function ItemsScreen({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
-    title: order.itemCount + ' ' + tx('Items')
+    title: order.itemCount + ' ' + tx(order.itemCount === 1 ? 'item' : 'items2')
   }), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3106,19 +3229,163 @@ function ItemsScreen({
     className: "font-semibold text-muted-foreground"
   }, "\xB7 ", it.sub.replace(/\s*\d+$/, '')), it.auto ? /*#__PURE__*/React.createElement("span", {
     className: "font-semibold text-muted-foreground"
-  }, " \xB7 ", it.auto) : null) : /*#__PURE__*/React.createElement(Badge, {
-    intent: "neutral",
-    className: "mt-1.5"
-  }, tx(gradesReadyFor(order) ? 'Not graded' : order.group === 'completed' ? 'Shipping to you' : 'In grading'))), /*#__PURE__*/React.createElement("span", {
+  }, " \xB7 ", it.auto) : null) : null), /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0 text-muted-foreground"
   }, Icon.chevR)))))));
+}
+
+/* ---------- MOTION PERMISSION ---------- */
+function MotionPermissionSheet({
+  visible,
+  onAllow,
+  onDismiss
+}) {
+  if (!visible) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-50 flex items-end justify-center bg-black/50 p-4",
+    onClick: onDismiss
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-[22px] w-[22px]"
+  }, Icon.device)), /*#__PURE__*/React.createElement("h2", {
+    className: "mt-3.5 text-lg font-extrabold leading-tight text-foreground"
+  }, tx('Enable motion effects?')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
+  }, tx("HobbyX uses your device's motion sensors (Physical activity) to add a 3D tilt and shine effect when your graded cards are revealed. No activity data is recorded or shared. You can skip this and still reveal your cards.")), /*#__PURE__*/React.createElement("div", {
+    className: "mt-5 flex flex-col gap-2.5"
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "dark",
+    className: "w-full",
+    onClick: onAllow
+  }, tx('Allow motion')), /*#__PURE__*/React.createElement("button", {
+    onClick: onDismiss,
+    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
+  }, tx('Not now')))));
+}
+
+/* ---------- FULLSCREEN VIEWER ---------- */
+function CardFullscreenViewer({
+  item,
+  order,
+  initialView,
+  close
+}) {
+  const [view, setView] = useStateG(initialView ?? 0);
+  const [busy, setBusy] = useStateG(null);
+  const graded = isGraded(item);
+  const runAction = action => {
+    if (busy) return;
+    setBusy(action);
+    setTimeout(() => {
+      setBusy(null);
+      window.toast(tx(action === 'save' ? 'Saved to Photos' : 'Shared'), 'success');
+    }, 700);
+  };
+  const Stage = () => view === 2 ? /*#__PURE__*/React.createElement("div", {
+    className: "flex w-full items-stretch justify-center gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-[47%]",
+    style: graded ? {
+      aspectRatio: '0.62'
+    } : null
+  }, graded ? /*#__PURE__*/React.createElement(Slab, {
+    item: item,
+    big: true,
+    face: "front",
+    hideNotes: true,
+    className: "h-full w-full",
+    radius: 0
+  }) : /*#__PURE__*/React.createElement(CardImage, {
+    cert: item.cert,
+    category: item.category,
+    src: item.img,
+    className: "aspect-[5/7] w-full",
+    radius: 0
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "w-[47%]",
+    style: graded ? {
+      aspectRatio: '0.62'
+    } : null
+  }, graded ? /*#__PURE__*/React.createElement(Slab, {
+    item: item,
+    face: "back",
+    className: "h-full w-full",
+    radius: 0
+  }) : /*#__PURE__*/React.createElement(CardBack, {
+    category: item.category
+  }))) : /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto w-[72%]",
+    style: graded ? {
+      aspectRatio: '0.62'
+    } : null
+  }, view === 0 ? graded ? /*#__PURE__*/React.createElement(Slab, {
+    item: item,
+    big: true,
+    face: "front",
+    hideNotes: true,
+    className: "h-full w-full",
+    radius: 0
+  }) : /*#__PURE__*/React.createElement(CardImage, {
+    cert: item.cert,
+    category: item.category,
+    src: item.img,
+    className: "aspect-[5/7] w-full",
+    radius: 0
+  }) : graded ? /*#__PURE__*/React.createElement(Slab, {
+    item: item,
+    big: true,
+    face: "back",
+    className: "h-full w-full",
+    radius: 0
+  }) : /*#__PURE__*/React.createElement(CardBack, {
+    category: item.category
+  }));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex flex-col bg-background"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center px-4 pt-3"
+  }, /*#__PURE__*/React.createElement(IconBtn, {
+    onClick: close,
+    "aria-label": tx('Close')
+  }, Icon.close)), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0 flex-1 truncate px-2 text-center text-[15px] font-bold text-foreground"
+  }, tx(item.name))), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-1 items-center justify-center px-5 py-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full rounded-xl border border-border bg-muted/40 p-7"
+  }, /*#__PURE__*/React.createElement(Stage, null))), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-2.5 px-5 pb-3"
+  }, ['Front', 'Back', 'Both'].map((v, i) => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    onClick: () => setView(i),
+    className: 'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
+  }, tx(v)))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 border-t border-border px-5 py-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => runAction('save'),
+    disabled: !!busy,
+    className: "flex flex-col items-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold text-foreground disabled:opacity-50"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-6 w-6"
+  }, Icon.download), tx('Save')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => runAction('share'),
+    disabled: !!busy,
+    className: "flex flex-col items-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold text-foreground disabled:opacity-50"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-6 w-6"
+  }, Icon.share), tx('Share')));
 }
 
 /* ---------- CARD DETAIL ---------- */
 function CardDetail({
   item,
   order,
-  close
+  close,
+  openViewer
 }) {
   const [view, setView] = useStateG(0); // 0 Front · 1 Back · 2 Slab(both)
   const graded = isGraded(item);
@@ -3171,9 +3438,16 @@ function CardDetail({
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-full flex-col justify-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7"
-  }, view === 2 ? /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => openViewer && openViewer(view),
+    className: "relative flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7 text-left transition-colors hover:bg-muted/60 active:scale-[.995]",
+    "aria-label": tx('View fullscreen')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4"
+  }, Icon.expand)), view === 2 ? /*#__PURE__*/React.createElement("div", {
     className: "flex w-full items-stretch justify-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-[47%]",
@@ -3195,11 +3469,15 @@ function CardDetail({
     }
   }, view === 0 ? /*#__PURE__*/React.createElement(Front, null) : /*#__PURE__*/React.createElement(Back, null))), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex justify-center gap-2.5"
-  }, ['Front', 'Back', 'Slab'].map((v, i) => /*#__PURE__*/React.createElement("button", {
+  }, ['Front', 'Back', 'Both'].map((v, i) => /*#__PURE__*/React.createElement("button", {
     key: v,
     onClick: () => setView(i),
     className: 'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
-  }, tx(v)))), /*#__PURE__*/React.createElement("h1", {
+  }, tx(v)))), !gradesReadyFor(order) && /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-foreground"
+  }, tx('Note:')), " ", tx('Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.')), /*#__PURE__*/React.createElement("h1", {
     className: "mt-5 text-center text-lg font-bold leading-snug text-foreground"
   }, tx(item.name)), notGraded && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded-lg border border-border bg-card px-3 py-4 text-center"
@@ -3207,9 +3485,7 @@ function CardDetail({
     className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
   }, tx('Card Grade')), /*#__PURE__*/React.createElement("div", {
     className: "mt-1 text-[15px] font-bold text-foreground"
-  }, tx('Not graded')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-[12px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('This card was not graded.'))), graded && /*#__PURE__*/React.createElement("div", {
+  }, tx('NOT GRADED'))), graded && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 flex items-stretch justify-center gap-2.5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-4 text-center"
@@ -3536,7 +3812,7 @@ function GradeReveal({
     ref: sparkRef
   }))), /*#__PURE__*/React.createElement("div", {
     className: "gr-hint"
-  }, tx('Tap to open')), /*#__PURE__*/React.createElement("div", {
+  }, tx('Swipe to tear')), /*#__PURE__*/React.createElement("div", {
     className: "gr-info"
   }, item.auto ? /*#__PURE__*/React.createElement("div", {
     className: "gr-grades"
@@ -3578,7 +3854,7 @@ function GradeReveal({
       e.stopPropagation();
       last ? finishClose() : goNext();
     }
-  }, last ? tx('Done') + ` · ${graded.length} ${graded.length === 1 ? tx('card') : tx('cards')} ${tx('revealed')}` : tx('Reveal next') + ` (${idx + 2}/${graded.length})`)));
+  }, last ? tx('Done') + ` · ${graded.length} ${tx('revealed')}` : tx('Reveal next'))));
 }
 
 /* ---------- NOTIFICATIONS ---------- */
@@ -3717,7 +3993,9 @@ function NotificationsScreen({
     className: "flex h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary text-[15px] font-bold text-foreground transition-colors hover:bg-secondary/80 active:scale-[.99]"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
-  }, Icon.check), tx('Mark all read'))));
+  }, Icon.check), tx('Mark all read'))), list.length > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "px-5 pb-4 text-center text-[12px] font-medium text-muted-foreground"
+  }, tx("You've reached the end of your notifications.")));
 }
 
 /* ---------- ACCOUNT ---------- */
@@ -3753,26 +4031,37 @@ function DeleteAckRow({
 }
 function AccountScreen({
   goBack,
-  theme,
-  setTheme,
+  appearancePref,
+  setAppearancePref,
   onSignOut,
   openAccountInfo,
-  onDeleteAccount
+  onDeleteAccount,
+  onDeletionScheduled
 }) {
   const [notif, setNotif] = useStateG(true);
   const [showPolicies, setShowPolicies] = useStateG(false);
-  const POLICIES = [['Privacy Policy', 'https://hobbyxmarketplace.com/privacy-policy/'], ['Terms of Use', 'https://hobbyxmarketplace.com/terms-and-conditions/'], ['Shipping Policy', 'https://hobbyxmarketplace.com/shipping-policy/']];
-  const openExt = url => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const [confirmSignOut, setConfirmSignOut] = useStateG(false);
+  const [pendingExt, setPendingExt] = useStateG(null);
+  const POLICIES = [['Privacy Policy', 'https://hobbyxmarketplace.com/privacy-policy/'], ['Terms of Use', 'https://hobbyxmarketplace.com/terms-and-conditions/'], ['Cookie Policy', 'https://hobbyxmarketplace.com/cookie-policy/']];
+  const openExt = (url, label) => {
+    try {
+      const host = new URL(url).host.replace(/^www\./, '');
+      setPendingExt({
+        url,
+        label: label || host,
+        host
+      });
+    } catch (e) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
   };
   const [confirmDelete, setConfirmDelete] = useStateG(false);
-  const [deleteScheduled, setDeleteScheduled] = useStateG(false);
   const [ackSubmissions, setAckSubmissions] = useStateG(false);
   const [ackListings, setAckListings] = useStateG(false);
   const userEmail = ACCOUNT.info.email;
@@ -3792,12 +4081,7 @@ function AccountScreen({
   const scheduleDelete = () => {
     setConfirmDelete(false);
     resetDeleteAcks();
-    setDeleteScheduled(true);
-  };
-  const finishDeleteScheduled = () => {
-    setDeleteScheduled(false);
-    onDeleteAccount && onDeleteAccount(userEmail);
-    goBack();
+    onDeletionScheduled && onDeletionScheduled(userEmail);
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "flex h-full flex-col bg-background"
@@ -3833,18 +4117,16 @@ function AccountScreen({
     const isControl = isAppearance || isLanguage || isNotifications;
     const isHelp = label === 'Help Centre';
     const isPolicies = label === 'Terms & Policies';
-    const onRow = label === 'Account Info' ? openAccountInfo : isHelp ? () => openExt('https://hobbyxmarketplace.com/faq/') : isPolicies ? () => setShowPolicies(v => !v) : isDelete ? openDeleteConfirm : danger ? onSignOut : undefined;
+    const isContact = label === 'Contact Us';
+    const onRow = label === 'Account Info' ? openAccountInfo : isHelp ? () => openExt('https://hobbyxmarketplace.com/faq/', tx('Help Centre')) : isContact ? () => openExt('https://hobbyxmarketplace.com/contact-us/', tx('Contact Us')) : isPolicies ? () => setShowPolicies(v => !v) : isDelete ? openDeleteConfirm : danger ? () => setConfirmSignOut(true) : undefined;
     const rowInner = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
       className: 'flex items-center gap-3 text-[15px] font-semibold ' + (isDelete ? 'text-red-600 dark:text-red-500' : danger ? 'text-primary' : 'text-foreground')
     }, /*#__PURE__*/React.createElement("span", {
       className: 'h-[18px] w-[18px] ' + (isDelete ? 'text-red-600 dark:text-red-500' : 'text-muted-foreground')
-    }, Icon[ic]), tx(label)), isAppearance ? /*#__PURE__*/React.createElement("div", {
-      className: "inline-flex items-center rounded-md bg-muted p-0.5"
-    }, [['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
-      key: k,
-      onClick: () => setTheme(k),
-      className: 'rounded px-2.5 py-1 text-xs font-bold transition-colors ' + (theme === k ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')
-    }, tx(l)))) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
+    }, Icon[ic]), tx(label)), isAppearance ? /*#__PURE__*/React.createElement(AppearanceSelect, {
+      value: appearancePref,
+      onChange: setAppearancePref
+    }) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
       checked: notif,
       onChange: setNotif
     }) : !danger && !isDelete && /*#__PURE__*/React.createElement("span", {
@@ -3864,34 +4146,70 @@ function AccountScreen({
       className: "border-t border-border bg-muted/40"
     }, POLICIES.map(([plabel, purl]) => /*#__PURE__*/React.createElement("button", {
       key: plabel,
-      onClick: () => openExt(purl),
+      onClick: () => openExt(purl, tx(plabel)),
       className: "flex w-full items-center justify-between py-2.5 pl-12 pr-4 text-left transition-colors hover:bg-accent/40"
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-[14px] font-medium text-muted-foreground"
     }, tx(plabel)), /*#__PURE__*/React.createElement("span", {
       className: "h-3.5 w-3.5 text-muted-foreground/70"
     }, Icon.external)))));
-  }))), grp.group === 'Preferences' && /*#__PURE__*/React.createElement("div", {
-    className: "mt-6"
+  })))), confirmSignOut && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setConfirmSignOut(false)
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mb-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"
-  }, tx('Contact Us')), /*#__PURE__*/React.createElement("div", {
-    className: "overflow-hidden rounded-lg border border-border bg-card"
-  }, [['Facebook', 'facebook', 'https://www.facebook.com/HobbyXStore', '@HobbyXStore'], ['Instagram', 'instagram', 'https://www.instagram.com/hobbyxmarketplace', '@hobbyxmarketplace']].map(([label, ic, url, handle], si) => /*#__PURE__*/React.createElement("button", {
-    key: label,
-    onClick: () => openExt(url),
-    className: 'flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors hover:bg-accent/40 ' + (si > 0 ? 'border-t border-border' : '')
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-extrabold leading-tight text-foreground"
+  }, tx('Sign out?')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
+  }, tx("You'll need to log in again to access your account.")), /*#__PURE__*/React.createElement("div", {
+    className: "mt-5 flex flex-col gap-2.5"
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "dark",
+    className: "w-full",
+    onClick: () => {
+      setConfirmSignOut(false);
+      onSignOut && onSignOut();
+    }
+  }, tx('Sign Out')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setConfirmSignOut(false),
+    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
+  }, tx('Cancel')))), pendingExt && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setPendingExt(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-3 text-[15px] font-semibold text-foreground"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-[18px] w-[18px] text-muted-foreground"
-  }, Icon[ic]), tx(label)), /*#__PURE__*/React.createElement("span", {
-    className: "text-[13px] font-medium text-muted-foreground"
-  }, handle))))))), /*#__PURE__*/React.createElement("div", {
-    className: "mt-7 flex flex-col items-center gap-4 border-t border-border pt-5"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "whitespace-nowrap text-center text-[11px] font-medium text-muted-foreground/80"
-  }, "\xA9 2025 HobbyX Marketplace Limited. ", tx('All Rights Reserved')))), confirmDelete && /*#__PURE__*/React.createElement("div", {
+    className: "h-[22px] w-[22px]"
+  }, Icon.external)), /*#__PURE__*/React.createElement("h2", {
+    className: "mt-3.5 text-lg font-extrabold leading-tight text-foreground"
+  }, tx('Leaving HobbyX')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
+  }, tx("You'll open the"), " ", tx(pendingExt.label), " ", tx('page on'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-foreground"
+  }, pendingExt.host), " ", tx('in your browser.')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-5 flex flex-col gap-2.5"
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "dark",
+    className: "w-full",
+    onClick: () => {
+      const a = document.createElement('a');
+      a.href = pendingExt.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setPendingExt(null);
+    }
+  }, tx('Continue')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPendingExt(null),
+    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
+  }, tx('Cancel')))), confirmDelete && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center overflow-hidden bg-black/50 p-4",
     onClick: closeDelete
   }, /*#__PURE__*/React.createElement("div", {
@@ -3919,7 +4237,7 @@ function AccountScreen({
     className: "delete-account-section"
   }, /*#__PURE__*/React.createElement(DeleteSectionLabel, null, tx('What will be deleted')), /*#__PURE__*/React.createElement("p", {
     className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Your profile, saved cards, preferences, and other personal data associated with your account.'))), /*#__PURE__*/React.createElement("div", {
+  }, tx('Your profile, preferences, and other personal data associated with your account.'))), /*#__PURE__*/React.createElement("div", {
     className: "delete-account-note"
   }, /*#__PURE__*/React.createElement(DeleteSectionLabel, null, tx('Data we may retain')), /*#__PURE__*/React.createElement("p", {
     className: "text-[12px] font-medium leading-relaxed text-muted-foreground"
@@ -3946,23 +4264,7 @@ function AccountScreen({
   }, tx('Delete account')), /*#__PURE__*/React.createElement("button", {
     onClick: closeDelete,
     className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel')))))), deleteScheduled && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex items-end justify-center overflow-hidden bg-black/50 p-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-sheet rounded-2xl bg-card p-5 shadow-xl",
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-success__icon"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-5 w-5"
-  }, Icon.check)), /*#__PURE__*/React.createElement("p", {
-    className: "mt-3.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Your account has been scheduled for deletion. A reactivation link has been sent to'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-foreground"
-  }, userEmail), ". ", tx('This link is valid for 30 days.')), /*#__PURE__*/React.createElement("button", {
-    onClick: finishDeleteScheduled,
-    className: "mt-5 flex h-12 w-full items-center justify-center rounded-md bg-foreground text-[15px] font-bold text-background transition-colors hover:bg-foreground/90 active:scale-[.99]"
-  }, tx('Done')))));
+  }, tx('Cancel')))))))))));
 }
 
 /* ---------- ACCOUNT INFO (editable form) ---------- */
@@ -4054,7 +4356,7 @@ function AccountInfoScreen({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
-    title: tx('Account Info')
+    title: tx('Account info')
   }), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
@@ -4520,9 +4822,6 @@ function Legal({
   }, {
     label: 'Terms of Use',
     url: 'https://hobbyxmarketplace.com/terms-and-conditions/'
-  }, {
-    label: 'Shipping Policy',
-    url: 'https://hobbyxmarketplace.com/shipping-policy/'
   }];
   const host = pending ? new URL(pending.url).host : '';
   return /*#__PURE__*/React.createElement("div", {
@@ -4554,7 +4853,7 @@ function Legal({
     className: "h-[18px] w-[18px]"
   }, Icon.instagram))), /*#__PURE__*/React.createElement("p", {
     className: "whitespace-nowrap text-center text-[11px] font-medium text-muted-foreground/80"
-  }, "\xA9 2025 HobbyX Marketplace Limited. ", tx('All Rights Reserved')), pending && /*#__PURE__*/React.createElement("div", {
+  }, "\xA9 2026 HobbyX Marketplace Limited. ", tx('All Rights Reserved')), pending && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setPending(null)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4615,6 +4914,210 @@ function Splash({
   }, "Volk Innovatives")));
 }
 
+const MOTION_PROMPT_KEY = 'hobbyx_motion_prompt';
+const DEMO_VERIFY_EMAIL = 'verify@gmail.com';
+const REGISTER_PENDING_EMAIL = 'pending@email.com';
+const REGISTER_REJECTED_EMAIL = 'rejected@email.com';
+function hasAnsweredMotionPrompt() {
+  try {
+    return localStorage.getItem(MOTION_PROMPT_KEY) === '1';
+  } catch (e) {
+    return true;
+  }
+}
+function markMotionPromptAnswered() {
+  try {
+    localStorage.setItem(MOTION_PROMPT_KEY, '1');
+  } catch (e) {}
+}
+function formatResendCooldown(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? m + ':' + String(s).padStart(2, '0') : s + 's';
+}
+function formatDeletionPurgeDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function AuthBackBar({
+  onPress,
+  disabled
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onPress,
+    disabled: disabled,
+    className: "inline-flex items-center gap-1 px-7 pt-[58px] text-[15px] font-bold text-foreground disabled:opacity-50"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-5 w-5"
+  }, Icon.chevL), tx('Back'));
+}
+function VerificationResendHint({
+  email,
+  variant,
+  onResendPress
+}) {
+  const isInline = variant === 'inline';
+  const [cooldown, setCooldown] = useAuthState(0);
+  const [isResending, setIsResending] = useAuthState(false);
+  const [success, setSuccess] = useAuthState('');
+  useAuthEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+  const resend = () => {
+    if (isResending || cooldown > 0) return;
+    onResendPress && onResendPress();
+    setIsResending(true);
+    setTimeout(() => {
+      setIsResending(false);
+      setSuccess(tx('Verification email sent.'));
+      setCooldown(60);
+    }, 700);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: (isInline ? 'mt-4 ' : 'mt-5 ') + 'text-center'
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
+  }, tx('Didn’t receive it? Check your spam folder or')), cooldown > 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "mt-2 text-[13px] font-medium text-muted-foreground"
+  }, tx('Resend available in {{time}}').replace('{{time}}', formatResendCooldown(cooldown))) : /*#__PURE__*/React.createElement("button", {
+    onClick: resend,
+    disabled: isResending,
+    className: "mt-2 text-[13px] font-bold text-primary disabled:opacity-50"
+  }, isResending ? tx('Loading...') : tx('resend verification email')), success && /*#__PURE__*/React.createElement("p", {
+    className: "mt-2 text-[12px] font-semibold text-success"
+  }, success));
+}
+function AuthEmailSentSuccessView({
+  identifier,
+  bodySuffixKey,
+  onBackToLogin,
+  showResend
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-success/10 text-success"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, Icon.check)), /*#__PURE__*/React.createElement("h1", {
+    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
+  }, tx('Check your email')), /*#__PURE__*/React.createElement("p", {
+    className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
+  }, tx('If an account matches'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-foreground"
+  }, identifier), tx(bodySuffixKey)), showResend && /*#__PURE__*/React.createElement(VerificationResendHint, {
+    email: identifier,
+    variant: "panel"
+  }), /*#__PURE__*/React.createElement(Button, {
+    className: "mt-6 w-full",
+    size: "lg",
+    onClick: onBackToLogin
+  }, tx('Back to Login')));
+}
+function VerifyEmail({
+  email,
+  go
+}) {
+  if (!email) {
+    go('login');
+    return null;
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "px-7 pb-8"
+  }, /*#__PURE__*/React.createElement(AuthBackBar, {
+    onPress: () => go('login')
+  }), /*#__PURE__*/React.createElement(Brand, {
+    className: "h-6",
+    wrap: "pb-2"
+  }), /*#__PURE__*/React.createElement(AuthEmailSentSuccessView, {
+    identifier: email,
+    bodySuffixKey: ", we've sent a link to verify your email.",
+    onBackToLogin: () => go('login'),
+    showResend: true
+  }));
+}
+function RegisterOutcome({
+  variant,
+  go
+}) {
+  const pending = variant === 'pending';
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex min-h-full flex-col px-7 py-12 text-center"
+  }, /*#__PURE__*/React.createElement(AuthBackBar, {
+    onPress: () => go('login')
+  }), /*#__PURE__*/React.createElement(Brand, {
+    className: "h-6",
+    wrap: "pb-2"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: 'mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full ' + (pending ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-500')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, pending ? Icon.clock : Icon.alert)), /*#__PURE__*/React.createElement("h1", {
+    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
+  }, tx(pending ? 'Account pending approval' : 'Account could not be activated')), /*#__PURE__*/React.createElement("p", {
+    className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
+  }, tx(pending ? "Your account is waiting for approval. We'll email you when it's ready." : 'Your account could not be activated.')), /*#__PURE__*/React.createElement(Button, {
+    className: "mt-6 w-full max-w-[300px]",
+    size: "lg",
+    onClick: () => go('login')
+  }, tx('Back to Login')));
+}
+function DeletionPendingScreen({
+  email,
+  onReactivate,
+  onSignOut
+}) {
+  const purgeDate = formatDeletionPurgeDate();
+  const days = 30;
+  const [busy, setBusy] = useAuthState(false);
+  const scheduleDetail = tx('Scheduled for {{date}} ({{days}} days remaining).').replace('{{date}}', purgeDate).replace('{{days}}', String(days));
+  const reactivate = () => {
+    if (busy) return;
+    setBusy(true);
+    setTimeout(() => {
+      setBusy(false);
+      onReactivate && onReactivate();
+    }, 700);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex h-full flex-col bg-background"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "no-scrollbar flex-1 overflow-y-auto px-7 pb-8"
+  }, /*#__PURE__*/React.createElement(AuthBackBar, {
+    onPress: onSignOut,
+    disabled: busy
+  }), /*#__PURE__*/React.createElement(Brand, {
+    className: "h-6",
+    wrap: "pb-2"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary/10 text-primary"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, Icon.clock)), /*#__PURE__*/React.createElement("h1", {
+    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
+  }, tx('Account scheduled for deletion')), /*#__PURE__*/React.createElement("p", {
+    className: "mx-auto mt-3 max-w-[320px] text-sm font-medium leading-relaxed text-muted-foreground"
+  }, tx('Your account is in a 30-day grace period. After that, your profile and personal data will be permanently removed.'), " ", scheduleDetail, " ", tx('A reactivation link was also sent to'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-foreground"
+  }, email), "."), /*#__PURE__*/React.createElement(Button, {
+    className: "mt-6 w-full max-w-[320px]",
+    size: "lg",
+    disabled: busy,
+    onClick: reactivate
+  }, busy ? /*#__PURE__*/React.createElement("span", {
+    className: "spin"
+  }) : tx('Reactivate account')))));
+}
+
 /* LOGIN */
 const DEMO_EMAIL = 'user@gmail.com',
   DEMO_PW = 'Test@123';
@@ -4629,6 +5132,8 @@ function Login({
   const [t, setT] = useAuthState(false);
   const [load, setLoad] = useAuthState(false);
   const [err, setErr] = useAuthState(null);
+  const [verificationNotice, setVerificationNotice] = useAuthState(null);
+  const [verificationResetKey, setVerificationResetKey] = useAuthState(0);
   const valid = emailOk(email) && pw.length >= 1;
   const submit = () => {
     setT(true);
@@ -4638,29 +5143,34 @@ function Login({
       setErr('no-connection');
       return;
     }
+    if (verificationNotice) setVerificationResetKey(k => k + 1);
     setLoad(true);
     setTimeout(() => {
       setLoad(false);
-      // demo credentials: user@gmail.com / Test@123
-      if (email.trim().toLowerCase() !== DEMO_EMAIL) {
-        setErr('no-account');
+      const normalized = email.trim().toLowerCase();
+      if (normalized === DEMO_VERIFY_EMAIL && pw === DEMO_PW) {
+        setVerificationNotice({
+          email: normalized
+        });
         return;
       }
-      if (pw !== DEMO_PW) {
-        setErr('bad-password');
+      if (normalized !== DEMO_EMAIL || pw !== DEMO_PW) {
+        setVerificationNotice(null);
+        setErr('bad-credentials');
         return;
       }
+      setVerificationNotice(null);
       if (keep) localStorage.setItem('hobbyx_keep', '1');
       onAuthed();
     }, 700);
   };
   const errMsg = {
     'no-connection': 'No internet connection. Check your network and try again.',
-    'no-account': 'We couldn’t find an account with that email address.',
-    'bad-password': 'Incorrect password. Please try again.'
+    'bad-credentials': 'Incorrect email or password. Please try again.'
   }[err];
-  const pwErr = err === 'bad-password';
-  const emErr = err === 'no-account';
+  const credErr = err === 'bad-credentials';
+  const verifyAlert = verificationNotice ? tx('Check your email and tap the activation link before signing in.') : null;
+  const alertMessage = verifyAlert || err && tx(errMsg);
   return /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-full flex-col justify-center px-7 py-8"
   }, /*#__PURE__*/React.createElement(Brand, {
@@ -4668,9 +5178,9 @@ function Login({
     wrap: "pb-2"
   }), /*#__PURE__*/React.createElement("h1", {
     className: "mt-4 text-center text-[28px] font-extrabold tracking-tight text-foreground"
-  }, tx('Log In')), err && /*#__PURE__*/React.createElement("div", {
+  }, tx('Log In')), alertMessage && /*#__PURE__*/React.createElement("div", {
     className: "mt-5"
-  }, /*#__PURE__*/React.createElement(Alert, null, tx(errMsg))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Alert, null, alertMessage)), /*#__PURE__*/React.createElement("div", {
     className: "mt-6 space-y-4"
   }, /*#__PURE__*/React.createElement(Field, {
     label: tx('E-mail'),
@@ -4682,10 +5192,11 @@ function Login({
     onChange: e => {
       setEmail(e.target.value);
       setErr(null);
+      setVerificationNotice(null);
     },
     placeholder: "you@email.com",
     autoCapitalize: "none",
-    className: inputCls + (t && !emailOk(email) || emErr ? ' border-red-400' : '')
+    className: inputCls + (t && !emailOk(email) || credErr ? ' border-red-400' : '')
   })), /*#__PURE__*/React.createElement(Field, {
     label: tx('Password'),
     req: true,
@@ -4697,7 +5208,7 @@ function Login({
       setErr(null);
     },
     placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
-    invalid: t && pw.length < 1 || pwErr
+    invalid: t && pw.length < 1 || credErr
   }))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setKeep(k => !k),
     className: "mt-4 flex items-center gap-2.5"
@@ -4707,8 +5218,15 @@ function Login({
     className: "h-3 w-3"
   }, Icon.check)), /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-sm font-semibold text-muted-foreground"
-  }, tx('Keep me signed in'))), /*#__PURE__*/React.createElement(Button, {
-    className: "mt-6 w-full",
+  }, tx('Keep me signed in'))), verificationNotice && /*#__PURE__*/React.createElement(VerificationResendHint, {
+    key: verificationResetKey,
+    email: verificationNotice.email,
+    variant: "inline",
+    onResendPress: () => setVerificationNotice({
+      email: verificationNotice.email
+    })
+  }), /*#__PURE__*/React.createElement(Button, {
+    className: 'mt-6 w-full' + (verificationNotice ? ' mt-4' : ''),
     size: "lg",
     disabled: load,
     onClick: submit
@@ -4718,7 +5236,7 @@ function Login({
     className: "mt-3 flex items-center justify-center gap-2 rounded-md bg-muted/60 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5"
-  }, Icon.user), tx('Demo login'), ": user@gmail.com / Test@123"), /*#__PURE__*/React.createElement("button", {
+  }, Icon.user), tx('Demo login'), ": user@gmail.com / Test@123 · ", tx('Unverified'), ": ", DEMO_VERIFY_EMAIL, " / ", DEMO_PW), /*#__PURE__*/React.createElement("button", {
     onClick: () => go('reset'),
     className: "mt-3 block w-full text-center text-sm font-semibold text-muted-foreground hover:text-foreground"
   }, tx('Forgot your password?')), /*#__PURE__*/React.createElement("div", {
@@ -4770,7 +5288,6 @@ function Register({
   const mismatch = f.cpw.length > 0 && f.pw !== f.cpw; // live mismatch (no submit needed)
   const pwOk = pwAllOk(f.pw);
   const phoneDigits = f.phone.replace(/\D/g, '').length;
-  const [sent, setSent] = useAuthState(false);
   const valid = f.first.trim() && f.last.trim() && emailOk(f.email) && pwOk && match && phoneDigits >= 6;
   const submit = () => {
     setT(true);
@@ -4783,42 +5300,26 @@ function Register({
     setLoad(true);
     setTimeout(() => {
       setLoad(false);
-      setSent(true);
+      const normalized = f.email.trim().toLowerCase();
+      if (normalized === REGISTER_PENDING_EMAIL) {
+        go('register-pending');
+        return;
+      }
+      if (normalized === REGISTER_REJECTED_EMAIL) {
+        go('register-rejected');
+        return;
+      }
+      go('verify-email:' + normalized);
     }, 800);
   };
   const phoneError = phoneBad ? tx('Only numbers are allowed.') : t && phoneDigits < 6 ? tx('Enter a valid number.') : null;
-  if (sent) {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "flex min-h-full flex-col items-center justify-center px-7 py-12 text-center"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-success/10 text-success"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "h-9 w-9"
-    }, Icon.check)), /*#__PURE__*/React.createElement("h1", {
-      className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
-    }, tx('Verify your email')), /*#__PURE__*/React.createElement("p", {
-      className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
-    }, tx('We’ve sent a verification link to'), " ", /*#__PURE__*/React.createElement("span", {
-      className: "font-bold text-foreground"
-    }, f.email), ". ", tx('Please check your inbox and click the link to activate your account.')), /*#__PURE__*/React.createElement("p", {
-      className: "mx-auto mt-3 max-w-[300px] text-[13px] font-medium leading-relaxed text-muted-foreground"
-    }, tx('Didn’t receive it? Check your spam folder or'), " ", /*#__PURE__*/React.createElement("button", {
-      onClick: () => {
-        setSent(false);
-        setLoad(false);
-      },
-      className: "font-bold text-primary"
-    }, tx('try again')), "."), /*#__PURE__*/React.createElement(Button, {
-      className: "mt-6 w-full",
-      size: "lg",
-      onClick: () => go('login')
-    }, tx('Go to Login')));
-  }
   return /*#__PURE__*/React.createElement("div", {
     className: "px-7"
-  }, /*#__PURE__*/React.createElement(Brand, {
+  }, /*#__PURE__*/React.createElement(AuthBackBar, {
+    onPress: () => go('login')
+  }), /*#__PURE__*/React.createElement(Brand, {
     className: "h-12",
-    wrap: "pt-[58px] pb-0"
+    wrap: "pt-2 pb-0"
   }), /*#__PURE__*/React.createElement("h1", {
     className: "mt-5 text-center text-[28px] font-extrabold leading-none tracking-tight text-foreground"
   }, tx('Create account')), err && /*#__PURE__*/React.createElement("div", {
@@ -4901,6 +5402,8 @@ function Register({
   }, load ? /*#__PURE__*/React.createElement("span", {
     className: "spin"
   }) : tx('Register')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-[11px] font-medium text-muted-foreground"
+  }, tx('Demo'), ": ", REGISTER_PENDING_EMAIL, " / ", REGISTER_REJECTED_EMAIL), /*#__PURE__*/React.createElement("p", {
     className: "mt-4 text-center text-[13px] font-medium leading-relaxed text-muted-foreground"
   }, tx('By signing up, you agree to the'), " ", /*#__PURE__*/React.createElement("button", {
     onClick: () => go('legal:Terms of Service'),
@@ -5747,8 +6250,8 @@ function Toaster() {
   }, toast.msg));
 }
 function GradingApp({
-  theme,
-  setTheme,
+  appearancePref,
+  setAppearancePref,
   offline,
   empty,
   gradingOnly,
@@ -5759,7 +6262,10 @@ function GradingApp({
     name: 'list'
   }]);
   const [card, setCard] = useRootState(null);
+  const [viewer, setViewer] = useRootState(null);
   const [reveal, setReveal] = useRootState(false);
+  const [motionSheet, setMotionSheet] = useRootState(false);
+  const [deletionPending, setDeletionPending] = useRootState(null);
   const [revealedIds, setRevealedIds] = useRootState([]);
   const [highlightId, setHighlightId] = useRootState(null);
   const top = stack[stack.length - 1];
@@ -5773,7 +6279,15 @@ function GradingApp({
       name: 'list'
     }]);
     setCard(null);
+    setViewer(null);
     setReveal(false);
+  };
+  const requestReveal = () => {
+    if (hasAnsweredMotionPrompt()) {
+      setReveal(true);
+      return;
+    }
+    setMotionSheet(true);
   };
   // "Loading" phase: show a matching skeleton for ~2s every time a page is opened,
   // then reveal the real screen — all without leaving the Loading tab.
@@ -5795,7 +6309,20 @@ function GradingApp({
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "relative h-full bg-background"
-  }, top.name === 'list' && /*#__PURE__*/React.createElement(ListScreen, {
+  }, deletionPending ? /*#__PURE__*/React.createElement(DeletionPendingScreen, {
+    email: deletionPending,
+    onReactivate: () => {
+      setDeletionPending(null);
+      window.toast(tx('Account deletion has been cancelled.'), 'success');
+    },
+    onSignOut: () => {
+      try {
+        localStorage.removeItem('hobbyx_keep');
+      } catch (e) {}
+      setDeletionPending(null);
+      window.location.href = 'index.html';
+    }
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, top.name === 'list' && /*#__PURE__*/React.createElement(ListScreen, {
     tab: tab,
     setTab: onTab,
     unread: unread,
@@ -5819,7 +6346,7 @@ function GradingApp({
     empty: empty,
     openOrder: id => {
       const o = ORDERS.find(x => x.id === id);
-      if (!o || o.locked) {
+      if (!o || isOrderPreDetail(o)) {
         setTab('progress');
         setStack([{
           name: 'list'
@@ -5836,8 +6363,8 @@ function GradingApp({
     }
   }), top.name === 'account' && /*#__PURE__*/React.createElement(AccountScreen, {
     goBack: pop,
-    theme: theme,
-    setTheme: setTheme,
+    appearancePref: appearancePref,
+    setAppearancePref: setAppearancePref,
     openAccountInfo: () => push({
       name: 'accountinfo'
     }),
@@ -5847,7 +6374,8 @@ function GradingApp({
       } catch (e) {}
       window.location.href = 'index.html';
     },
-    onDeleteAccount: () => {}
+    onDeleteAccount: () => {},
+    onDeletionScheduled: email => setDeletionPending(email)
   }), top.name === 'accountinfo' && /*#__PURE__*/React.createElement(AccountInfoScreen, {
     goBack: pop,
     openLegal: () => {}
@@ -5860,7 +6388,7 @@ function GradingApp({
       orderId: order.id
     }),
     openCard: i => setCard(i),
-    startReveal: () => setReveal(true),
+    startReveal: requestReveal,
     markRevealed: () => setRevealedIds(ids => ids.includes(order.id) ? ids : [...ids, order.id])
   }), top.name === 'items' && order && /*#__PURE__*/React.createElement(ItemsScreen, {
     order: order,
@@ -5871,13 +6399,33 @@ function GradingApp({
   }, /*#__PURE__*/React.createElement(CardDetail, {
     item: order.items[card],
     order: order,
-    close: () => setCard(null)
-  })), order && /*#__PURE__*/React.createElement(GradeReveal, {
+    close: () => setCard(null),
+    openViewer: v => setViewer({
+      view: v
+    })
+  })), viewer && order && card != null && /*#__PURE__*/React.createElement(CardFullscreenViewer, {
+    item: order.items[card],
+    order: order,
+    initialView: viewer.view,
+    close: () => setViewer(null)
+  }), order && /*#__PURE__*/React.createElement(GradeReveal, {
     order: order,
     show: reveal,
     close: () => setReveal(false),
     onRevealed: () => setRevealedIds(ids => ids.includes(order.id) ? ids : [...ids, order.id])
-  }));
+  }), /*#__PURE__*/React.createElement(MotionPermissionSheet, {
+    visible: motionSheet,
+    onAllow: () => {
+      markMotionPromptAnswered();
+      setMotionSheet(false);
+      setReveal(true);
+    },
+    onDismiss: () => {
+      markMotionPromptAnswered();
+      setMotionSheet(false);
+      setReveal(true);
+    }
+  })));
 }
 function AuthFlow({
   onAuthed,
@@ -5885,7 +6433,15 @@ function AuthFlow({
   offline
 }) {
   const [route, setRoute] = useRootState('login');
-  const go = r => setRoute(r);
+  const [verifyEmail, setVerifyEmail] = useRootState('');
+  const go = r => {
+    if (r.startsWith('verify-email:')) {
+      setVerifyEmail(r.slice('verify-email:'.length));
+      setRoute('verify-email');
+      return;
+    }
+    setRoute(r);
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5900,6 +6456,15 @@ function AuthFlow({
     go: go,
     onAuthed: onAuthed,
     offline: offline
+  }), route === 'verify-email' && /*#__PURE__*/React.createElement(VerifyEmail, {
+    email: verifyEmail,
+    go: go
+  }), route === 'register-pending' && /*#__PURE__*/React.createElement(RegisterOutcome, {
+    variant: "pending",
+    go: go
+  }), route === 'register-rejected' && /*#__PURE__*/React.createElement(RegisterOutcome, {
+    variant: "rejected",
+    go: go
   }), route === 'reset' && /*#__PURE__*/React.createElement(Reset, {
     go: go,
     offline: offline
@@ -5943,10 +6508,21 @@ function hexToHsl(hex) {
   }
   return Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + Math.round(l * 100) + '%';
 }
+function resolveAppearanceTheme(pref) {
+  if (pref === 'dark' || pref === 'light') return pref;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   useLang(); // re-render whole tree when language changes
-  const [theme, setTheme] = useRootState(() => localStorage.getItem('hobbyx_theme') || 'light');
+  const [appearancePref, setAppearancePref] = useRootState(() => {
+    try {
+      return localStorage.getItem('hobbyx_appearance') || localStorage.getItem('hobbyx_theme') || 'system';
+    } catch (e) {
+      return 'system';
+    }
+  });
+  const [theme, setTheme] = useRootState(() => resolveAppearanceTheme(appearancePref));
   const [phase, setPhase] = useRootState('auth'); // auth | app
   const [booting, setBooting] = useRootState(true); // full-screen splash overlay (covers status bar)
   const [simOffline, setSimOffline] = useRootState(false);
@@ -5956,8 +6532,18 @@ function App() {
   const PW = 390,
     PH = 820;
   useRootEffect(() => {
-    localStorage.setItem('hobbyx_theme', theme);
-  }, [theme]);
+    try {
+      localStorage.setItem('hobbyx_appearance', appearancePref);
+    } catch (e) {}
+    setTheme(resolveAppearanceTheme(appearancePref));
+  }, [appearancePref]);
+  useRootEffect(() => {
+    if (appearancePref !== 'system') return undefined;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemTheme = () => setTheme(resolveAppearanceTheme('system'));
+    mq.addEventListener('change', syncSystemTheme);
+    return () => mq.removeEventListener('change', syncSystemTheme);
+  }, [appearancePref]);
   useRootEffect(() => {
     const fit = () => {
       const aH = window.innerHeight - 130,
@@ -6005,8 +6591,8 @@ function App() {
     className: "inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-md ring-1 ring-black/5"
   }, [['light', 'Light', Icon.sun], ['dark', 'Dark', Icon.moon]].map(([k, l, ic]) => /*#__PURE__*/React.createElement("button", {
     key: k,
-    onClick: () => setTheme(k),
-    className: 'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors ' + (theme === k ? 'bg-neutral-900 text-white' : 'text-neutral-500')
+    onClick: () => setAppearancePref(k),
+    className: 'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors ' + (appearancePref === k ? 'bg-neutral-900 text-white' : 'text-neutral-500')
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
   }, ic), l))), /*#__PURE__*/React.createElement("button", {
@@ -6050,8 +6636,8 @@ function App() {
     showCredit: t.volkCredit,
     offline: offline
   }) : /*#__PURE__*/React.createElement(GradingApp, {
-    theme: theme,
-    setTheme: setTheme,
+    appearancePref: appearancePref,
+    setAppearancePref: setAppearancePref,
     offline: offline,
     empty: phase === 'empty',
     gradingOnly: phase === 'gradingonly',
