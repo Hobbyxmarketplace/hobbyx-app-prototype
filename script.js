@@ -3351,7 +3351,7 @@ function CardFullscreenViewer({
   }, /*#__PURE__*/React.createElement(IconBtn, {
     onClick: close,
     "aria-label": tx('Close')
-  }, Icon.close)), /*#__PURE__*/React.createElement("div", {
+  }, Icon.close), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0 flex-1 truncate px-2 text-center text-[15px] font-bold text-foreground"
   }, tx(item.name))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 items-center justify-center px-5 py-4"
@@ -3377,7 +3377,7 @@ function CardFullscreenViewer({
     className: "flex flex-col items-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold text-foreground disabled:opacity-50"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-6 w-6"
-  }, Icon.share), tx('Share')));
+  }, Icon.share), tx('Share'))));
 }
 
 /* ---------- CARD DETAIL ---------- */
@@ -3435,18 +3435,22 @@ function CardDetail({
       className: "h-3.5 w-3.5"
     }, Icon.external)) : '#' + item.cert
   }), /*#__PURE__*/React.createElement("div", {
-    className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex min-h-full flex-col justify-center"
+    className: "no-scrollbar flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4"
+  }, !gradesReadyFor(order) && /*#__PURE__*/React.createElement("p", {
+    className: "mb-3 px-4 text-justify text-[13px] font-medium leading-normal text-muted-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-bold"
+  }, tx('Note:')), " ", tx('Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.')), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-1 flex-col justify-center"
   }, /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => openViewer && openViewer(view),
     className: "relative flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7 text-left transition-colors hover:bg-muted/60 active:scale-[.995]",
     "aria-label": tx('View fullscreen')
   }, /*#__PURE__*/React.createElement("span", {
-    className: "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm"
+    className: "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4"
+    className: "h-[18px] w-[18px]"
   }, Icon.expand)), view === 2 ? /*#__PURE__*/React.createElement("div", {
     className: "flex w-full items-stretch justify-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3472,13 +3476,9 @@ function CardDetail({
   }, ['Front', 'Back', 'Both'].map((v, i) => /*#__PURE__*/React.createElement("button", {
     key: v,
     onClick: () => setView(i),
-    className: 'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
-  }, tx(v)))), !gradesReadyFor(order) && /*#__PURE__*/React.createElement("p", {
-    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-foreground"
-  }, tx('Note:')), " ", tx('Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.')), /*#__PURE__*/React.createElement("h1", {
-    className: "mt-5 text-center text-lg font-bold leading-snug text-foreground"
+    className: 'min-w-[56px] rounded-md px-3 py-1.5 text-center text-[13px] font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
+  }, tx(v)))), /*#__PURE__*/React.createElement("h1", {
+    className: "mt-5 text-center text-[17px] font-bold leading-snug text-foreground"
   }, tx(item.name)), notGraded && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded-lg border border-border bg-card px-3 py-4 text-center"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3494,7 +3494,7 @@ function CardDetail({
   }, tx('Card Grade')), /*#__PURE__*/React.createElement("div", {
     className: "text-[28px] font-extrabold leading-none text-foreground"
   }, item.grade), /*#__PURE__*/React.createElement("div", {
-    className: "text-[12px] font-semibold uppercase tracking-wide text-muted-foreground"
+    className: "text-[13px] font-semibold uppercase tracking-wide text-muted-foreground"
   }, item.sub.replace(/\s*\d+$/, ''))), item.auto && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-4 text-center"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3502,13 +3502,13 @@ function CardDetail({
   }, tx('Autograph')), /*#__PURE__*/React.createElement("div", {
     className: "text-[28px] font-extrabold leading-none text-foreground"
   }, item.auto.replace(/AUTO\s*/i, '')), /*#__PURE__*/React.createElement("div", {
-    className: "text-[12px] font-semibold uppercase tracking-wide text-muted-foreground"
+    className: "text-[13px] font-semibold uppercase tracking-wide text-muted-foreground"
   }, tx('PSA/DNA')))), graded && item.notes && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded-lg border border-border bg-card p-4 text-left"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mb-2 text-[11px] font-bold uppercase tracking-wider text-foreground"
+    className: "mb-1 text-[11px] font-bold uppercase tracking-wider text-foreground"
   }, tx('Grader Notes')), /*#__PURE__*/React.createElement("p", {
-    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
+    className: "text-[13px] font-medium leading-normal text-muted-foreground"
   }, item.notes)))));
 }
 
@@ -4084,7 +4084,7 @@ function AccountScreen({
     onDeletionScheduled && onDeletionScheduled(userEmail);
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "flex h-full flex-col bg-background"
+    className: "relative flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
     title: tx('Account')
@@ -4153,7 +4153,7 @@ function AccountScreen({
     }, tx(plabel)), /*#__PURE__*/React.createElement("span", {
       className: "h-3.5 w-3.5 text-muted-foreground/70"
     }, Icon.external)))));
-  })))), confirmSignOut && /*#__PURE__*/React.createElement("div", {
+  })))))), confirmSignOut && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSignOut(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4175,7 +4175,7 @@ function AccountScreen({
   }, tx('Sign Out')), /*#__PURE__*/React.createElement("button", {
     onClick: () => setConfirmSignOut(false),
     className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel')))), pendingExt && /*#__PURE__*/React.createElement("div", {
+  }, tx('Cancel'))))), pendingExt && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setPendingExt(null)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4209,7 +4209,7 @@ function AccountScreen({
   }, tx('Continue')), /*#__PURE__*/React.createElement("button", {
     onClick: () => setPendingExt(null),
     className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel')))), confirmDelete && /*#__PURE__*/React.createElement("div", {
+  }, tx('Cancel'))))), confirmDelete && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center overflow-hidden bg-black/50 p-4",
     onClick: closeDelete
   }, /*#__PURE__*/React.createElement("div", {
@@ -4264,7 +4264,7 @@ function AccountScreen({
   }, tx('Delete account')), /*#__PURE__*/React.createElement("button", {
     onClick: closeDelete,
     className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel')))))))))));
+  }, tx('Cancel')))))));
 }
 
 /* ---------- ACCOUNT INFO (editable form) ---------- */
@@ -6399,16 +6399,19 @@ function GradingApp({
   }, /*#__PURE__*/React.createElement(CardDetail, {
     item: order.items[card],
     order: order,
-    close: () => setCard(null),
+    close: () => {
+      setCard(null);
+      setViewer(null);
+    },
     openViewer: v => setViewer({
       view: v
     })
-  })), viewer && order && card != null && /*#__PURE__*/React.createElement(CardFullscreenViewer, {
+  }), viewer && /*#__PURE__*/React.createElement(CardFullscreenViewer, {
     item: order.items[card],
     order: order,
     initialView: viewer.view,
     close: () => setViewer(null)
-  }), order && /*#__PURE__*/React.createElement(GradeReveal, {
+  })), order && /*#__PURE__*/React.createElement(GradeReveal, {
     order: order,
     show: reveal,
     close: () => setReveal(false),
