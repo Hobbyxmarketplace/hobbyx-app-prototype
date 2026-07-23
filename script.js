@@ -1,7 +1,5 @@
-/* HobbyX — precompiled static build (no Babel/CDN at runtime) — faithful 1:1 of HobbyX App.html */
 
-
-/* ===== app2/data.jsx ===== */
+// ===== data.jsx =====
 /* HobbyX — unified data model (shadcn rebuild)
    Categories HobbyX grades: Pokémon, Football, Basketball, One Piece, Kakawow, Yu-Gi-Oh!, Weiss Schwarz */
 const CATEGORIES = ['Pokémon', 'Football', 'Basketball', 'One Piece', 'Kakawow', 'Yu-Gi-Oh!', 'Weiss Schwarz'];
@@ -29,7 +27,7 @@ const PIPELINE = [{
 }, {
   key: 'ready',
   label: 'Grades Ready',
-  desc: 'Your order is ready for Grade Reveal.'
+  desc: 'Your grades are ready to be revealed.'
 }, {
   key: 'completing',
   label: 'Completing',
@@ -37,25 +35,15 @@ const PIPELINE = [{
 }, {
   key: 'complete',
   label: 'Ready for Pickup',
-  desc: 'Your order is ready for pickup at Mongkok Store.'
+  desc: 'Your order is complete and ready for pickup at HobbyX Store.'
+}, {
+  key: 'pickedUp',
+  label: 'Picked Up',
+  desc: 'Your order has been picked up. Thanks for grading with HobbyX!'
 }];
 const STEP_INDEX = Object.fromEntries(PIPELINE.map((s, i) => [s.key, i]));
-function isOrderPreDetail(order) {
-  return !!(order && order.status === 'arrived');
-}
 function progressFor(key) {
   return STEP_INDEX[key] / (PIPELINE.length - 1);
-}
-
-// An item only counts as "graded" once it has a grade assigned. Until then —
-// even inside a Grades Ready / Completing / Complete order — it keeps its
-// original ungraded image, shows a "Not graded" status, and is dropped from
-// the reveal stories.
-function isGraded(it) {
-  return !!(it && it.grade);
-}
-function gradesReadyFor(order) {
-  return STEP_INDEX[order.status] >= STEP_INDEX.ready;
 }
 
 // status → badge intent. ALL neutral so every label looks the same.
@@ -68,6 +56,31 @@ function statusIntent(key) {
 
 // Fixed "today" so behind/on-schedule logic is deterministic in the prototype.
 const TODAY = new Date('2026-06-06T00:00:00');
+
+// Estimated completion is shown as a date RANGE (not a single exact date) —
+// friendlier UX since grading turnaround is inherently an estimate.
+// estDate stays the authoritative single date used for behind/on-schedule math;
+// `est` becomes a human range string ending on that date.
+function fmtShort(d) {
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function estRange(iso, estDaysStr) {
+  const end = new Date(iso + 'T00:00:00');
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  const start = new Date(end);
+  start.setDate(start.getDate() - span);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  if (sameMonth) return `${start.toLocaleDateString('en-US', {
+    month: 'short'
+  })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`;
+  if (sameYear) return `${fmtShort(start)} – ${fmtShort(end)}, ${end.getFullYear()}`;
+  return `${fmtShort(start)}, ${start.getFullYear()} – ${fmtShort(end)}, ${end.getFullYear()}`;
+}
 const ORDERS = [{
   id: 'o1',
   name: 'Autograph Series — Mackenyu',
@@ -76,7 +89,8 @@ const ORDERS = [{
   shipment: 'May 15 · 1st Shipment',
   num: '26793937',
   itemCount: 1,
-  est: 'Sep 25, 2026',
+  estDate: '2026-09-25',
+  est: estRange('2026-09-25', '90 Business Days'),
   estDays: '90 Business Days',
   status: 'research',
   group: 'progress',
@@ -98,7 +112,8 @@ const ORDERS = [{
   shipment: 'Apr 12 · 1st Shipment',
   num: '26770330',
   itemCount: 44,
-  est: 'Jul 23, 2026',
+  estDate: '2026-07-23',
+  est: estRange('2026-07-23', '40 Business Days'),
   estDays: '40 Business Days',
   status: 'ready',
   group: 'progress',
@@ -177,7 +192,8 @@ const ORDERS = [{
   shipment: 'Apr 30 · 2nd Shipment',
   num: '26717114',
   itemCount: 103,
-  est: 'Jun 8, 2026',
+  estDate: '2026-06-08',
+  est: estRange('2026-06-08', '25 Business Days'),
   estDays: '25 Business Days',
   status: 'grading',
   group: 'progress',
@@ -231,7 +247,8 @@ const ORDERS = [{
   shipment: 'May 20 · 2nd Shipment',
   num: '26781450',
   itemCount: 26,
-  est: 'Jul 2, 2026',
+  estDate: '2026-07-02',
+  est: estRange('2026-07-02', '45 Business Days'),
   estDays: '45 Business Days',
   status: 'research',
   group: 'progress',
@@ -265,7 +282,8 @@ const ORDERS = [{
   shipment: 'May 08 · 1st Shipment',
   num: '26788120',
   itemCount: 60,
-  est: 'Jun 18, 2026',
+  estDate: '2026-06-18',
+  est: estRange('2026-06-18', '20 Business Days'),
   estDays: '20 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -302,7 +320,8 @@ const ORDERS = [{
   shipment: 'May 02 · 1st Shipment',
   num: '26780114',
   itemCount: 8,
-  est: 'Jun 11, 2026',
+  estDate: '2026-06-11',
+  est: estRange('2026-06-11', '30 Business Days'),
   estDays: '30 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -327,7 +346,8 @@ const ORDERS = [{
   shipment: 'Apr 25 · 1st Shipment',
   num: '26795500',
   itemCount: 5,
-  est: 'Jun 2, 2026',
+  estDate: '2026-06-02',
+  est: estRange('2026-06-02', '15 Business Days'),
   estDays: '15 Business Days',
   status: 'completing',
   group: 'progress',
@@ -379,7 +399,8 @@ const ORDERS = [{
   shipment: 'May 22 · 2nd Shipment',
   num: '26799010',
   itemCount: 3,
-  est: 'Aug 1, 2026',
+  estDate: '2026-08-01',
+  est: estRange('2026-08-01', '60 Business Days'),
   estDays: '60 Business Days',
   status: 'research',
   group: 'progress',
@@ -402,7 +423,8 @@ const ORDERS = [{
   shipment: 'May 26 · 2nd Shipment',
   num: '26801337',
   itemCount: 12,
-  est: 'Nov 13, 2026',
+  estDate: '2026-11-13',
+  est: estRange('2026-11-13', '120 Business Days'),
   estDays: '120 Business Days',
   status: 'arrived',
   group: 'progress',
@@ -427,7 +449,7 @@ const ORDERS = [{
   itemCount: 3,
   est: 'May 22, 2026',
   estDays: '5 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-17',
   completedOn: 'May 15, 2026',
@@ -441,7 +463,8 @@ const ORDERS = [{
     qa: 'May 09, 2026',
     ready: 'May 11, 2026',
     completing: 'May 13, 2026',
-    complete: 'May 15, 2026'
+    complete: 'May 15, 2026',
+    pickedUp: 'May 18, 2026'
   },
   items: [{
     cert: '46721747',
@@ -500,7 +523,7 @@ const ORDERS = [{
   itemCount: 1,
   est: 'Jun 02, 2026',
   estDays: '10 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-05-18',
   completedOn: 'Jun 02, 2026',
@@ -514,7 +537,8 @@ const ORDERS = [{
     qa: 'May 29, 2026',
     ready: 'May 30, 2026',
     completing: 'Jun 01, 2026',
-    complete: 'Jun 02, 2026'
+    complete: 'Jun 02, 2026',
+    pickedUp: 'Jun 04, 2026'
   },
   items: [{
     cert: '137150278',
@@ -544,7 +568,7 @@ const ORDERS = [{
   itemCount: 2,
   est: 'May 04, 2026',
   estDays: '10 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-05',
   completedOn: 'Apr 28, 2026',
@@ -558,7 +582,8 @@ const ORDERS = [{
     qa: 'Apr 24, 2026',
     ready: 'Apr 25, 2026',
     completing: 'Apr 27, 2026',
-    complete: 'Apr 28, 2026'
+    complete: 'Apr 28, 2026',
+    pickedUp: 'May 01, 2026'
   },
   items: [{
     cert: '59017657',
@@ -627,7 +652,7 @@ const SORTS = [{
 const STATUS_FILTERS = [{
   key: 'all',
   label: 'All Statuses'
-}, ...['arrived', 'research', 'grading', 'assembly', 'ready', 'completing'].map(k => ({
+}, ...['research', 'grading', 'assembly', 'ready', 'completing'].map(k => ({
   key: k,
   label: PIPELINE[STEP_INDEX[k]].label
 }))];
@@ -652,8 +677,8 @@ const NOTIFICATIONS = [{
 }, {
   id: 'n3',
   icon: 'truck',
-  title: 'Ready for Pickup',
-  body: 'Your order Super Express Order is ready for pickup.',
+  title: 'Order shipped',
+  body: 'Super Express Order is on the way.',
   ship: 'August 24 - 1st Shipment',
   time: '3d ago',
   unread: false,
@@ -670,9 +695,9 @@ const NOTIFICATIONS = [{
 }];
 const ACCOUNT = {
   name: 'Alex Carter',
+  handle: '@alexc_cards',
   initials: 'AC',
   member: 'HobbyX member since 2023',
-  marketplaceListings: 2,
   info: {
     first: 'Alex',
     last: 'Carter',
@@ -680,14 +705,14 @@ const ACCOUNT = {
     phone: '+852 6298 0425'
   },
   groups: [{
-    group: 'Account',
-    items: [['Account Info', 'user']]
-  }, {
     group: 'Preferences',
-    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell']]
+    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell'], ['Biometrics for Invoices', 'fingerprint']]
   }, {
     group: 'Support',
-    items: [['Help Centre', 'help'], ['Terms & Policies', 'doc'], ['Contact Us', 'mail'], ['Sign Out', 'signout']]
+    items: [['Help Centre', 'help'], ['Terms & Policies', 'doc']]
+  }, {
+    group: 'Session',
+    items: [['Sign Out', 'signout']]
   }, {
     group: 'Remove Account',
     items: [['Delete Account', 'trash']]
@@ -717,7 +742,7 @@ Object.assign(window, {
   slotId
 });
 
-/* ===== app2/i18n.jsx ===== */
+// ===== i18n.jsx =====
 /* HobbyX — i18n (English + Traditional Chinese for Hong Kong)
    tx(englishString) → returns the translation for the current language,
    or the original string if there's no entry (so card product names,
@@ -822,21 +847,6 @@ const ZH = {
   'Graded': '已評級',
   'In vault': '保險庫',
   'HobbyX member since 2023': '自 2023 年起成為 HobbyX 會員',
-  'Delete your account?': '刪除你的帳戶？',
-  'Delete account': '刪除帳戶',
-  'Your account will be scheduled for deletion. You will have a period of 30 days to reactivate your account using the link sent to your registered email address. If your account is not reactivated within this period, your account and all associated data will be permanently deleted and cannot be recovered.': '你的帳戶將被安排刪除。你有 30 天的期限，可使用傳送至你註冊電郵地址的連結重新啟用帳戶。如未在此期限內重新啟用，你的帳戶及所有相關資料將被永久刪除，且無法復原。',
-  'The reactivation link will be sent to': '重新啟用連結將傳送至',
-  'Your account has been scheduled for deletion. A reactivation link has been sent to': '你的帳戶已安排刪除。重新啟用連結已傳送至',
-  'This link is valid for 30 days.': '此連結有效期為 30 天。',
-  'What will be deleted': '將被刪除的資料',
-  'Your profile, preferences, and other personal data associated with your account.': '你的個人資料、偏好設定及其他與帳戶相關的個人資料。',
-  'Data we may retain': '可能保留的資料',
-  'Certain transaction records may be retained where required for legal, tax, or accounting purposes. Such records will not be used for marketing.': '基於法律、稅務或會計需要，部分交易記錄可能會被保留，且不會用於市場推廣。',
-  'Confirmation required': '須予確認',
-  'Grading submissions': '評級提交',
-  'Marketplace listings': '市場上架',
-  'I understand that if my account is permanently deleted, I will lose access to any in-progress grading submissions, including tracking and related order information.': '本人明白如帳戶被永久刪除，本人將無法再存取任何進行中的評級提交，包括追蹤及相關訂單資料。',
-  'I understand that if my account is permanently deleted, any active HobbyX Marketplace listings will be removed and I will no longer have access to related sale information.': '本人明白如帳戶被永久刪除，任何進行中的 HobbyX 市場上架項目將被移除，本人亦將無法再存取相關出售資料。',
   'Shipping to you': '寄送中',
   'In grading': '評級中',
   // —— pipeline / statuses ——
@@ -867,12 +877,6 @@ const ZH = {
   'PSA labels are being printed and each eligible item is being sonically sealed within a PSA holder.': 'PSA 標籤正在印製，每件符合資格的物品正被超聲波封入 PSA 保護殼。',
   'A final quality check is performed on every slab before it ships.': '每個封裝在寄出前都會進行最終品質檢查。',
   'Your grades are ready to be revealed.': '你的評級結果已可揭曉。',
-  'Your order is ready for Grade Reveal.': '你的訂單已可進行評級揭曉。',
-  'Your order is ready for pickup at Mongkok Store.': '你的訂單已可在旺角店取貨。',
-  'Ready for Pickup at Mongkok Store': '可到旺角店取貨',
-  'No orders ready for pickup yet': '目前沒有可供取回的訂單',
-  'Graded cards ready for collection will appear here.': '已評級並可供領取的卡牌會在此顯示。',
-  'System': '系統',
   'Your order has been completed. You’ll receive an email when cards are ready for pickup at HobbyX Store.': '你的訂單已完成。當卡牌可於 HobbyX 門市取貨時，你將收到電子郵件通知。',
   'Your order is complete and on its way to you.': '你的訂單已完成，正在寄送途中。',
   'Login successful': '登入成功',
@@ -902,8 +906,7 @@ const ZH = {
   'Now grading': '正在評級',
   'Regular Order moved to Grading.': '標準訂單已進入評級階段。',
   'Order shipped': '訂單已寄出',
-  'Ready for Pickup': '可供取貨',
-  'Your order Super Express Order is ready for pickup.': '你的 Super Express Order 訂單已可供取貨。',
+  'Super Express Order is on the way.': '特快訂單正在寄送途中。',
   'Order arrived': '訂單已到達',
   'Walk Through Crossover arrived at the facility.': 'Walk Through Crossover 已送達評級中心。',
   '2h ago': '2 小時前',
@@ -913,39 +916,7 @@ const ZH = {
   // —— auth UX: validation / password / phone ——
   'Demo login': '示範登入',
   'Only numbers are allowed.': '只允許輸入數字。',
-  'Incorrect email or password. Please try again.': '電郵或密碼不正確，請再試一次。',
-  'NOT GRADED': '未評級',
   'No internet connection. Check your network and try again.': '沒有網絡連線。請檢查你的網絡後再試一次。',
-  'Back to Login': '返回登入',
-  'Account scheduled for deletion': '帳戶已安排刪除',
-  'Your account is in a 30-day grace period. After that, your profile and personal data will be permanently removed.': '你的帳戶處於 30 天寬限期。之後，你的個人資料及相關資料將被永久刪除。',
-  'Scheduled for {{date}} ({{days}} days remaining).': '已安排於 {{date}} 刪除（尚餘 {{days}} 天）。',
-  'A reactivation link was also sent to': '重新啟用連結亦已傳送至',
-  'Reactivate account': '重新啟用帳戶',
-  'Enable motion effects?': '啟用動態效果？',
-  "HobbyX uses your device's motion sensors (Physical activity) to add a 3D tilt and shine effect when your graded cards are revealed. No activity data is recorded or shared. You can skip this and still reveal your cards.": 'HobbyX 會使用你裝置的動態感應器（體能活動）在評級揭曉時加入 3D 傾斜及光澤效果。不會記錄或分享任何活動數據。你仍可跳過此步驟並繼續揭曉卡牌。',
-  'Allow motion': '允許動態效果',
-  'Not now': '暫不',
-  'Verification email sent.': '已傳送驗證電郵。',
-  'Resend available in {{time}}': '{{time}} 後可重新傳送',
-  'resend verification email': '重新傳送驗證電郵',
-  'Account pending approval': '帳戶待審批',
-  'Account could not be activated': '帳戶無法啟用',
-  "Your account is waiting for approval. We'll email you when it's ready.": '你的帳戶正在等待審批。準備就緒後我們會電郵通知你。',
-  'Your account could not be activated.': '你的帳戶無法啟用。',
-  'Check your email and tap the activation link before signing in.': '請查看電郵並在登入前點按啟用連結。',
-  'View fullscreen': '全螢幕查看',
-  'Save': '儲存',
-  'Share': '分享',
-  'Saved to Photos': '已儲存至相片',
-  'Shared': '已分享',
-  "Couldn't save image. Please try again.": '無法儲存圖片，請再試一次。',
-  "Couldn't share image. Please try again.": '無法分享圖片，請再試一次。',
-  'No image available': '沒有可用的圖片',
-  'Unverified': '未驗證',
-  'Account deletion has been cancelled.': '帳戶刪除已取消。',
-  'Demo': '示範',
-  'Close': '關閉',
   'Passwords match': '密碼相符',
   'Password strength': '密碼強度',
   'Weak': '弱',
@@ -1046,21 +1017,6 @@ const ZH = {
   'Final legal text will be supplied by HobbyX and Volk Innovatives before launch — covering how grading order data, account details and contact information are collected, stored and used.': '最終法律條文將由 HobbyX 及 Volk Innovatives 於推出前提供，內容涵蓋評級訂單資料、帳戶詳情及聯絡資訊如何被收集、儲存及使用。',
   'This screen exists so the link target is wired and reviewable in the prototype.': '此畫面用於連結原型中的目標頁面，方便檢視。',
   // —— register verification ——
-  'Contact Us': '聯絡我們',
-  'Sign out?': '登出？',
-  "You'll need to log in again to access your account.": '你需要重新登入才能存取你的帳戶。',
-  "You've reached the end of your grading orders.": '你已瀏覽所有評級訂單。',
-  "You've reached the end of your notifications.": '你已瀏覽所有通知。',
-  'Check your email': '查看你的電郵',
-  'If an account matches': '如有符合的帳戶',
-  ", we've sent a link to verify your email.": '，我們已發送連結以驗證你的電郵。',
-  'Note:': '備註：',
-  'Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.': '掃描影像由 PSA 提供。輕微刮痕可能是外層保護殼上的反光；請以最終評級為準。',
-  'Both': '雙面',
-  'Swipe to tear': '滑動撕開',
-  'Swipe across the light': '在光線上滑動',
-  'Cookie Policy': 'Cookie 政策',
-  'Account info': '帳戶資料',
   'Verify your email': '驗證你的電郵',
   'We’ve sent a verification link to': '我們已傳送驗證連結至',
   'Please check your inbox and click the link to activate your account.': '請查看你的收件匣，並點擊連結以啟用你的帳戶。',
@@ -1069,220 +1025,7 @@ const ZH = {
   'Go to Login': '前往登入',
   // —— login errors ——
   'We couldn’t find an account with that email address.': '找不到使用此電郵地址的帳戶。',
-  'Incorrect password. Please try again.': '密碼不正確。請再試一次。',
-  // —— added: full country list + remaining UI strings ——
-  'Macau': '澳門',
-  'Afghanistan': '阿富汗',
-  'Albania': '阿爾巴尼亞',
-  'Algeria': '阿爾及利亞',
-  'Andorra': '安道爾',
-  'Angola': '安哥拉',
-  'Antigua and Barbuda': '安提瓜和巴布達',
-  'Argentina': '阿根廷',
-  'Armenia': '亞美尼亞',
-  'Austria': '奧地利',
-  'Azerbaijan': '阿塞拜疆',
-  'Bahamas': '巴哈馬',
-  'Bahrain': '巴林',
-  'Bangladesh': '孟加拉國',
-  'Barbados': '巴巴多斯',
-  'Belarus': '白俄羅斯',
-  'Belgium': '比利時',
-  'Belize': '伯利茲',
-  'Benin': '貝寧',
-  'Bhutan': '不丹',
-  'Bolivia': '玻利維亞',
-  'Bosnia and Herzegovina': '波黑',
-  'Botswana': '博茨瓦納',
-  'Brazil': '巴西',
-  'Brunei': '文萊',
-  'Bulgaria': '保加利亞',
-  'Burkina Faso': '布基納法索',
-  'Burundi': '布隆迪',
-  'Cambodia': '柬埔寨',
-  'Cameroon': '喀麥隆',
-  'Cape Verde': '佛得角',
-  'Central African Republic': '中非',
-  'Chad': '乍得',
-  'Chile': '智利',
-  'Colombia': '哥倫比亞',
-  'Comoros': '科摩羅',
-  'Congo': '剛果（布）',
-  'Congo (DRC)': '剛果（金）',
-  'Costa Rica': '哥斯達黎加',
-  'Côte d’Ivoire': '科特迪瓦',
-  'Croatia': '克羅地亞',
-  'Cuba': '古巴',
-  'Cyprus': '塞浦路斯',
-  'Czechia': '捷克',
-  'Denmark': '丹麥',
-  'Djibouti': '吉布提',
-  'Dominica': '多米尼克',
-  'Dominican Republic': '多米尼加',
-  'Ecuador': '厄瓜多爾',
-  'Egypt': '埃及',
-  'El Salvador': '薩爾瓦多',
-  'Equatorial Guinea': '赤道幾內亞',
-  'Eritrea': '厄立特里亞',
-  'Estonia': '愛沙尼亞',
-  'Eswatini': '斯威士蘭',
-  'Ethiopia': '埃塞俄比亞',
-  'Fiji': '斐濟',
-  'Finland': '芬蘭',
-  'Gabon': '加蓬',
-  'Gambia': '岡比亞',
-  'Georgia': '格魯吉亞',
-  'Ghana': '加納',
-  'Greece': '希臘',
-  'Grenada': '格林納達',
-  'Guatemala': '危地馬拉',
-  'Guinea': '幾內亞',
-  'Guinea-Bissau': '幾內亞比紹',
-  'Guyana': '圭亞那',
-  'Haiti': '海地',
-  'Honduras': '洪都拉斯',
-  'Hungary': '匈牙利',
-  'Iceland': '冰島',
-  'Indonesia': '印尼',
-  'Iran': '伊朗',
-  'Iraq': '伊拉克',
-  'Ireland': '愛爾蘭',
-  'Israel': '以色列',
-  'Italy': '意大利',
-  'Jamaica': '牙買加',
-  'Jordan': '約旦',
-  'Kazakhstan': '哈薩克斯坦',
-  'Kenya': '肯尼亞',
-  'Kiribati': '基里巴斯',
-  'Kuwait': '科威特',
-  'Kyrgyzstan': '吉爾吉斯斯坦',
-  'Laos': '老撾',
-  'Latvia': '拉脱維亞',
-  'Lebanon': '黎巴嫩',
-  'Lesotho': '萊索托',
-  'Liberia': '利比里亞',
-  'Libya': '利比亞',
-  'Liechtenstein': '列支敦士登',
-  'Lithuania': '立陶宛',
-  'Luxembourg': '盧森堡',
-  'Madagascar': '馬達加斯加',
-  'Malawi': '馬拉維',
-  'Maldives': '馬爾代夫',
-  'Mali': '馬裏',
-  'Malta': '馬耳他',
-  'Marshall Islands': '馬紹爾羣島',
-  'Mauritania': '毛里塔尼亞',
-  'Mauritius': '毛里求斯',
-  'Mexico': '墨西哥',
-  'Micronesia': '密克羅尼西亞聯邦',
-  'Moldova': '摩爾多瓦',
-  'Monaco': '摩納哥',
-  'Mongolia': '蒙古',
-  'Montenegro': '黑山',
-  'Morocco': '摩洛哥',
-  'Mozambique': '莫桑比克',
-  'Myanmar': '緬甸',
-  'Namibia': '納米比亞',
-  'Nauru': '瑙魯',
-  'Nepal': '尼泊爾',
-  'Netherlands': '荷蘭',
-  'New Zealand': '新西蘭',
-  'Nicaragua': '尼加拉瓜',
-  'Niger': '尼日爾',
-  'Nigeria': '尼日利亞',
-  'North Macedonia': '北馬其頓',
-  'Norway': '挪威',
-  'Oman': '阿曼',
-  'Pakistan': '巴基斯坦',
-  'Palau': '帕勞',
-  'Palestine': '巴勒斯坦',
-  'Panama': '巴拿馬',
-  'Papua New Guinea': '巴布亞新幾內亞',
-  'Paraguay': '巴拉圭',
-  'Peru': '秘魯',
-  'Philippines': '菲律賓',
-  'Poland': '波蘭',
-  'Portugal': '葡萄牙',
-  'Qatar': '卡塔爾',
-  'Romania': '羅馬尼亞',
-  'Russia': '俄羅斯',
-  'Rwanda': '盧旺達',
-  'Saint Kitts and Nevis': '聖基茨和尼維斯',
-  'Saint Lucia': '聖盧西亞',
-  'Saint Vincent and the Grenadines': '聖文森特和格林納丁斯',
-  'Samoa': '薩摩亞',
-  'San Marino': '聖馬力諾',
-  'São Tomé and Príncipe': '聖多美和普林西比',
-  'Saudi Arabia': '沙特阿拉伯',
-  'Senegal': '塞內加爾',
-  'Serbia': '塞爾維亞',
-  'Seychelles': '塞舌爾',
-  'Sierra Leone': '塞拉利昂',
-  'Slovakia': '斯洛伐克',
-  'Slovenia': '斯洛文尼亞',
-  'Solomon Islands': '所羅門羣島',
-  'Somalia': '索馬里',
-  'South Africa': '南非',
-  'South Sudan': '南蘇丹',
-  'Spain': '西班牙',
-  'Sri Lanka': '斯里蘭卡',
-  'Sudan': '蘇丹',
-  'Suriname': '蘇里南',
-  'Sweden': '瑞典',
-  'Switzerland': '瑞士',
-  'Syria': '敍利亞',
-  'Tajikistan': '塔吉克斯坦',
-  'Tanzania': '坦桑尼亞',
-  'Thailand': '泰國',
-  'Timor-Leste': '東帝汶',
-  'Togo': '多哥',
-  'Tonga': '湯加',
-  'Trinidad and Tobago': '特立尼達和多巴哥',
-  'Tunisia': '突尼斯',
-  'Turkey': '土耳其',
-  'Turkmenistan': '土庫曼斯坦',
-  'Tuvalu': '圖瓦盧',
-  'Uganda': '烏干達',
-  'Ukraine': '烏克蘭',
-  'Uruguay': '烏拉圭',
-  'Uzbekistan': '烏茲別克斯坦',
-  'Vanuatu': '瓦努阿圖',
-  'Vatican City': '梵蒂岡',
-  'Venezuela': '委內瑞拉',
-  'Vietnam': '越南',
-  'Yemen': '也門',
-  'Zambia': '贊比亞',
-  'Zimbabwe': '津巴布韋',
-  'Search country or code': '搜尋國家或代碼',
-  'No countries found': '找不到國家',
-  'Clear all filters': '清除所有篩選',
-  'Get your cards graded': '為你的卡牌評級',
-  'Opens the HobbyX website in your browser': '在你的瀏覽器中開啟 HobbyX 網站',
-  'Your items are currently being reviewed and will appear here soon.': '你的物品正在審核中，稍後將在此顯示。',
-  'View all grades now?': '立即查看所有評級？',
-  'We’ll take you straight to the full list with every grade shown. You can always start the grade reveal later whenever you like.': '我們會帶你直接前往顯示所有評級的完整清單。你隨時可以稍後再開始評級揭曉。',
-  'Cancel': '取消',
-  'Card Grade': '卡牌評級',
-  'Autograph': '簽名',
-  'Grader Notes': '評級師備註',
-  'card': '張卡牌',
-  'cards': '張卡牌',
-  'revealed': '已揭曉',
-  'Contact Us': '聯絡我們',
-  'All Rights Reserved': '版權所有',
-  'Leaving HobbyX': '正在離開 HobbyX',
-  'You’ll open the': '你將開啟',
-  'page on': '頁面，網址為',
-  'in your browser.': '（在你的瀏覽器中）。',
-  'Continue': '繼續',
-  'Shipping Policy': '送貨政策',
-  'Terms & Policies': '條款及政策',
-  'Remove Account': '移除帳戶',
-  'Delete Account': '刪除帳戶',
-  'Newest': '最新',
-  'Oldest': '最舊',
-  'Not graded': '未評級',
-  'This card was not graded.': '此卡牌未獲評級。',
+  'Incorrect password. Please try again.': '密碼不正確。請再試一次。'
 };
 const langSubs = new Set();
 if (typeof window.__lang === 'undefined') {
@@ -1301,7 +1044,7 @@ function setLang(l) {
 }
 /* Traditional → Simplified character map — covers every Chinese character used in ZH.
    Characters identical in both scripts are omitted (left unchanged). */
-const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed';
+const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185';
 const T2S = {};
 for (let i = 0; i < T2S_PAIRS.length; i += 2) {
   T2S[T2S_PAIRS[i]] = T2S_PAIRS[i + 1];
@@ -1364,48 +1107,14 @@ function LangToggle({
     d: "m6 9 6 6 6-6"
   }))));
 }
-const APPEARANCE_PREFS = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
-function AppearanceSelect({
-  value,
-  onChange,
-  className = ''
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: 'inline-flex items-center ' + className
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: value,
-    onChange: e => onChange(e.target.value),
-    "aria-label": tx('Appearance'),
-    style: {
-      minWidth: '6.5rem'
-    },
-    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
-  }, APPEARANCE_PREFS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: k
-  }, tx(l)))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 24 24",
-    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
-}
 Object.assign(window, {
   tx,
   useLang,
   setLang,
-  LangToggle,
-  AppearanceSelect
+  LangToggle
 });
 
-/* ===== app2/icons.jsx ===== */
+// ===== icons.jsx =====
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /* HobbyX — lucide-style icons (shadcn uses lucide) */
 const sx = {
@@ -1529,6 +1238,47 @@ const Icon = {
   }), /*#__PURE__*/React.createElement("path", {
     d: "M7 11V7a5 5 0 0 1 10 0v4"
   })),
+  fingerprint: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 0-8 8c0 4 1.5 6 2 7"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 1 8 8c0 5-1 7-1 8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 20c-1-2-2-4-2-8a6 6 0 0 1 12 0c0 1.5-.3 2.8-.7 4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 0-4 4c0 3 1 4.5 1.5 6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 1 4 4c0 2-.3 3.5-1 5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 12v2c0 1.5.3 3 1 4.5"
+  })),
+  faceScan: /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 64 64",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M6 18V10a4 4 0 0 1 4-4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M58 18V10a4 4 0 0 1-4-4h-8",
+    transform: "translate(0,0)"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M46 6h8a4 4 0 0 1 4 4v8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 46v8a4 4 0 0 0 4 4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M58 46v8a4 4 0 0 1-4 4h-8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M22 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M42 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M32 28v8c0 1.5-1 2-2 2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M23 42c2.2 2 4.8 3 9 3s6.8-1 9-3"
+  })),
   more: /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 24 24",
     fill: "currentColor",
@@ -1626,37 +1376,6 @@ const Icon = {
     d: "M12 15V3m0 0-4 4m4-4 4 4"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-  })),
-  download: /*#__PURE__*/React.createElement("svg", _extends({
-    viewBox: "0 0 24 24"
-  }, sx), /*#__PURE__*/React.createElement("path", {
-    d: "M12 3v12"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "m7 10 5 5 5-5"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M5 21h14"
-  })),
-  expand: /*#__PURE__*/React.createElement("svg", _extends({
-    viewBox: "0 0 24 24"
-  }, sx), /*#__PURE__*/React.createElement("path", {
-    d: "M15 3h6v6"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "m21 3-7 7"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M9 21H3v-6"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "m3 21 7-7"
-  })),
-  device: /*#__PURE__*/React.createElement("svg", _extends({
-    viewBox: "0 0 24 24"
-  }, sx), /*#__PURE__*/React.createElement("rect", {
-    x: "7",
-    y: "2",
-    width: "10",
-    height: "20",
-    rx: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M11 18h2"
   })),
   vault: /*#__PURE__*/React.createElement("svg", _extends({
     viewBox: "0 0 24 24"
@@ -1890,7 +1609,8 @@ Object.assign(window, {
   Icon
 });
 
-/* ===== app2/ui.jsx ===== */
+// ===== ui.jsx =====
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /* HobbyX — shadcn UI primitives + shared pieces */
 const {
   useState,
@@ -1905,7 +1625,7 @@ function Badge({
 }) {
   // Each intent maps to its own token (own light + dark value). To recolour a
   // badge in one mode only, edit that token's value in :root (light) or .dark
-  // (dark) in HobbyX App.html — never hard-code a colour here.
+  // (dark) in index.html — never hard-code a colour here.
   const map = {
     neutral: 'bg-badge-neutral text-badge-neutral-foreground',
     primary: 'bg-badge-ready/10 text-badge-ready',
@@ -2408,7 +2128,7 @@ function Stepper({
   order
 }) {
   const current = STEP_INDEX[order.status];
-  const isComplete = order.status === 'complete';
+  const isComplete = current === PIPELINE.length - 1;
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-1"
   }, PIPELINE.map((s, i) => {
@@ -2417,7 +2137,6 @@ function Stepper({
     const future = i > current && !isComplete;
     const last = i === PIPELINE.length - 1;
     const date = order.dates && order.dates[s.key];
-    const showDate = (s.key === 'arrived' || s.key === 'completing') && i <= current && date;
     return /*#__PURE__*/React.createElement("div", {
       key: s.key,
       className: "grid grid-cols-[24px_1fr_auto] gap-x-3.5"
@@ -2438,13 +2157,15 @@ function Stepper({
       className: "pb-5"
     }, /*#__PURE__*/React.createElement("div", {
       className: 'text-[15px] ' + (last && isComplete ? 'font-bold text-success' : future ? 'font-medium text-muted-foreground' : 'font-semibold text-foreground')
-    }, tx(s.label)), active && !isComplete && /*#__PURE__*/React.createElement("div", {
+    }, tx(s.label)), active && /*#__PURE__*/React.createElement("div", {
       className: "mt-1 text-[13px] leading-snug text-muted-foreground"
     }, tx(s.desc))), /*#__PURE__*/React.createElement("div", {
       className: 'pt-1 text-[12px] font-medium whitespace-nowrap ' + (last && isComplete ? 'text-success' : 'text-muted-foreground')
-    }, showDate ? date : ''));
+    }, date || ''));
   }));
 }
+
+/* Persistent footer credit — shows on every screen */
 function FooterCredit() {
   return /*#__PURE__*/React.createElement("div", {
     className: "flex shrink-0 flex-col items-center justify-center gap-0.5 border-t border-border bg-background pt-2 pb-4"
@@ -2714,7 +2435,7 @@ Object.assign(window, {
   PhoneInput
 });
 
-/* ===== app2/grading.jsx ===== */
+// ===== grading.jsx =====
 /* HobbyX — grading screens (shadcn) */
 const {
   useState: useStateG
@@ -2738,7 +2459,7 @@ function Menu({
     key: it.key,
     onClick: () => onPick(it.key),
     className: "flex w-full items-center justify-between rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
-  }, tx(it.label), current === it.key && /*#__PURE__*/React.createElement("span", {
+  }, it.label, current === it.key && /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 text-primary"
   }, Icon.check))));
 }
@@ -2809,7 +2530,7 @@ function ListScreen({
   }, [highlightId]);
   const base = empty ? [] : gradingOnly ? tab === 'completed' ? ORDERS.filter(o => o.group === 'completed') : [] : ORDERS.filter(o => tab === 'completed' ? o.group === 'completed' : o.group === 'progress');
   let rows = base;
-  if (q.trim()) rows = rows.filter(o => (o.service + ' ' + (o.shipment || '')).toLowerCase().includes(q.toLowerCase()));
+  if (q.trim()) rows = rows.filter(o => (o.name + ' ' + o.category).toLowerCase().includes(q.toLowerCase()));
   if (tab === 'progress' && statusF !== 'all') rows = rows.filter(o => o.status === statusF);
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
   const filtered = q.trim() || statusF !== 'all';
@@ -2915,20 +2636,18 @@ function ListScreen({
     body: tx('Try a different search term or status filter.')
   }) : /*#__PURE__*/React.createElement(EmptyState, {
     icon: "inbox",
-    title: tab === 'completed' ? tx('No orders ready for pickup yet') : tx('No orders in progress'),
-    body: tab === 'completed' ? tx('Graded cards ready for collection will appear here.') : tx('Submit cards for grading and track their progress here.')
+    title: tab === 'completed' ? tx('No completed orders yet') : tx('No orders in progress'),
+    body: tab === 'completed' ? tx('Graded orders you receive back will appear here.') : tx('Submit cards for grading and track their progress here.')
   })), rows.map(o => {
     const pct = Math.round(progressFor(o.status) * 100);
     const oReady = o.items.some(it => it.grade || it.img || it.slab);
-    const preDetail = isOrderPreDetail(o);
     return /*#__PURE__*/React.createElement("button", {
       key: o.id,
-      onClick: () => preDetail ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
-      className: 'group flex w-full items-center gap-4 rounded-lg border border-border bg-[#F5F6F8] p-3 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (preDetail ? 'active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
+      onClick: () => o.locked ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
+      className: 'group flex w-full items-center gap-4 rounded-lg border border-border bg-[#F5F6F8] p-3 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (o.locked ? (highlightId === o.id ? '' : 'opacity-60 ') + 'active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
     }, o.group === 'completed' ? /*#__PURE__*/React.createElement(Slab, {
       item: o.items[0],
-      className: "h-[84px] w-[60px] shrink-0 shadow-sm",
-      hideNotes: true
+      className: "h-[84px] w-[60px] shrink-0 shadow-sm"
     }) : /*#__PURE__*/React.createElement(CardImage, {
       cert: o.items[0].cert,
       category: o.category,
@@ -2945,12 +2664,12 @@ function ListScreen({
       style: {
         fontSize: "13px"
       }
-    }, (o.shipment || tx(o.category)) + (oReady ? ' · ' + o.itemCount + ' ' + tx(o.itemCount === 1 ? 'item' : 'items') : '')), preDetail && /*#__PURE__*/React.createElement("div", {
+    }, (o.shipment || tx(o.category)) + (oReady ? ' · ' + o.itemCount + ' ' + tx(o.itemCount === 1 ? 'item' : 'items') : '')), o.locked && /*#__PURE__*/React.createElement("div", {
       className: "mt-2 flex"
     }, /*#__PURE__*/React.createElement(Badge, {
       intent: "neutral",
       className: "shrink-0"
-    }, tx('Order Arrived'))), !preDetail && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
+    }, tx('Order Arrived'))), !o.locked && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex"
@@ -2976,12 +2695,10 @@ function ListScreen({
       className: "mt-2.5 text-[13px] font-medium leading-snug text-muted-foreground"
     }, tx('Completion date'), ": ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-foreground"
-    }, o.completedOn)))), !preDetail && /*#__PURE__*/React.createElement("span", {
+    }, o.completedOn)))), !o.locked && /*#__PURE__*/React.createElement("span", {
       className: "h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
     }, Icon.chevR));
-  })), rows.length > 0 && /*#__PURE__*/React.createElement("p", {
-    className: "pb-3 text-center text-[12px] font-medium text-muted-foreground"
-  }, tx("You've reached the end of your grading orders.")), (empty || gradingOnly && tab === 'progress') && /*#__PURE__*/React.createElement("div", {
+  })), (empty || gradingOnly && tab === 'progress') && /*#__PURE__*/React.createElement("div", {
     className: "shrink-0 border-t border-border px-5 pt-3 pb-5"
   }, /*#__PURE__*/React.createElement("a", {
     href: "https://hobbyxstore.com/pages/hobbyx-grading-submission-services",
@@ -3017,6 +2734,64 @@ function DetailScreen({
   const imagesReady = order.items.some(it => it.grade || it.img || it.slab);
   const [tip, setTip] = useStateG(false);
   const [confirmSkip, setConfirmSkip] = useStateG(false);
+  const [showInvoice, setShowInvoice] = useStateG(false);
+  const [showAuthGate, setShowAuthGate] = useStateG(false);
+  const [gatePw, setGatePw] = useStateG('');
+  const [gatePwErr, setGatePwErr] = useStateG(false);
+  const [bioBusy, setBioBusy] = useStateG(false);
+  const [bioPhase, setBioPhase] = useStateG('idle');
+  const bioEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('hobbyx_bio_invoices') !== '0';
+  const openInvoiceGate = () => {
+    setGatePw('');
+    setGatePwErr(false);
+    setShowAuthGate(true);
+  };
+  const submitGatePw = () => {
+    if (gatePw === 'Test@123') {
+      setShowAuthGate(false);
+      setShowInvoice(true);
+    } else {
+      setGatePwErr(true);
+    }
+  };
+  const tryBiometrics = () => {
+    setBioBusy(true);
+    setBioPhase('scanning');
+    setTimeout(() => {
+      const ok = Math.random() > 0.15;
+      setBioPhase(ok ? 'success' : 'failed');
+      setTimeout(() => {
+        setBioBusy(false);
+        setBioPhase('idle');
+        if (ok) {
+          setShowAuthGate(false);
+          setShowInvoice(true);
+        }
+      }, ok ? 700 : 900);
+    }, 1100);
+  };
+  const invoiceList = order.invoices || React.useMemo(() => {
+    let seed = 0;
+    for (const ch of order.id || '') seed = seed * 31 + ch.charCodeAt(0) >>> 0;
+    const rand = () => {
+      seed = seed * 1103515245 + 12345 >>> 0;
+      return seed / 4294967296;
+    };
+    const total = order.itemCount || 1;
+    const n = Math.min(4, Math.max(1, total), Math.floor(rand() * 4) + 1);
+    const cuts = [];
+    let remaining = total;
+    for (let i = 0; i < n - 1; i++) {
+      const share = Math.max(1, Math.min(remaining - (n - i - 1), Math.round(remaining / (n - i) * (0.5 + rand()))));
+      cuts.push(share);
+      remaining -= share;
+    }
+    cuts.push(remaining);
+    return cuts.map((cards, i) => ({
+      inv: `H${String(Math.floor(rand() * 900000) + 100000).padStart(6, '0')}`,
+      cards
+    }));
+  }, [order.id, order.itemCount]);
   // View all is always available once images are ready. If grades aren't revealed
   // yet, confirm that the user wants to skip the reveal before jumping to the list.
   const handleViewAll = () => {
@@ -3032,10 +2807,10 @@ function DetailScreen({
     openItems();
   };
   const _cd = order.completedOn ? new Date(order.completedOn) : null;
-  const _ed = order.est ? new Date(order.est) : null;
+  const _ed = order.estDate ? new Date(order.estDate + 'T00:00:00') : order.est ? new Date(order.est) : null;
   const daysEarly = _cd && _ed ? Math.round((_ed - _cd) / 86400000) : 0;
   const aheadOfSchedule = completed && daysEarly > 0;
-  const behind = !completed && !isOrderPreDetail(order) && _ed && _ed < TODAY;
+  const behind = !completed && !order.locked && _ed && _ed < TODAY;
   // move the service name into the header once it scrolls out of view
   const detailScrollRef = React.useRef(null);
   const [showHdrTitle, setShowHdrTitle] = useStateG(false);
@@ -3061,9 +2836,12 @@ function DetailScreen({
     className: "text-[26px] font-extrabold leading-tight tracking-tight text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-[15px] font-semibold text-primary"
-  }, order.shipment || tx(order.category)), imagesReady && /*#__PURE__*/React.createElement("div", {
-    className: "mt-1.5 text-sm font-medium text-muted-foreground"
-  }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && /*#__PURE__*/React.createElement("div", {
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("button", {
+    onClick: openInvoiceGate,
+    className: "mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition active:scale-[.96] active:bg-accent"
+  }, tx('Invoices'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-muted-foreground"
+  }, "(", invoiceList.length, ")")), !completed && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 divide-x divide-border"
@@ -3096,12 +2874,10 @@ function DetailScreen({
   }), /*#__PURE__*/React.createElement("div", {
     className: "absolute right-3 top-full z-30 mt-1.5 w-[228px] rounded-xl bg-neutral-800 p-3.5 text-[12px] font-medium leading-relaxed text-white shadow-xl dark:bg-neutral-700"
   }, tx('Estimated completion date is calculated based your service level and its turnaround time in number of business days. The date will calculate once your order is entered into PSA Grading system and is not guaranteed.')))))), completed && /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 flex items-center gap-1.5"
+    className: "mt-3 flex items-center gap-1.5 text-sm font-bold text-success"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4 text-success"
-  }, Icon.check), /*#__PURE__*/React.createElement("span", {
-    className: "text-sm font-bold text-success"
-  }, tx('Ready for Pickup at Mongkok Store'))), imagesReady && /*#__PURE__*/React.createElement("div", {
+    className: "h-4 w-4"
+  }, Icon.check), tx('Completion date'), " : ", order.completedOn), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-6 flex w-full items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-base font-bold text-foreground"
@@ -3128,10 +2904,9 @@ function DetailScreen({
       key: it.cert,
       onClick: handleViewAll,
       className: "shrink-0 transition-transform active:scale-95"
-    }, isGraded(it) ? /*#__PURE__*/React.createElement(Slab, {
+    }, it.grade ? /*#__PURE__*/React.createElement(Slab, {
       item: it,
       className: "h-[92px] w-[66px] shadow-sm",
-      hideNotes: true,
       style: blurred ? {
         filter: 'blur(2.5px)'
       } : null
@@ -3162,7 +2937,84 @@ function DetailScreen({
     className: "mb-3 text-base font-bold text-foreground"
   }, tx('Status')), /*#__PURE__*/React.createElement(Stepper, {
     order: order
-  }))), confirmSkip && /*#__PURE__*/React.createElement("div", {
+  }))), showAuthGate && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => !bioBusy && setShowAuthGate(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-5 w-5"
+  }, Icon.lock)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-[13px] font-medium text-muted-foreground"
+  }, tx('Enter your account password to continue.')), bioEnabled && /*#__PURE__*/React.createElement("button", {
+    onClick: tryBiometrics,
+    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99]"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4"
+  }, Icon.fingerprint), tx('Use Face/Touch ID')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: gatePw,
+    onChange: e => {
+      setGatePw(e.target.value);
+      setGatePwErr(false);
+    },
+    placeholder: tx('Password'),
+    className: 'h-11 w-full rounded-md border bg-background px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none ' + (gatePwErr ? 'border-red-400' : 'border-input')
+  }), gatePwErr && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1.5 text-xs font-semibold text-red-500"
+  }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement("button", {
+    onClick: submitGatePw,
+    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent"
+  }, tx('Continue')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, bioEnabled ? tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.') : tx('Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.')))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm",
+    style: {
+      animation: 'faceScanFade .25s ease'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center",
+    style: {
+      animation: 'faceScanPop .3s cubic-bezier(.34,1.56,.64,1)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: 'relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 text-white ' + (bioPhase === 'success' ? 'border-success text-success' : bioPhase === 'failed' ? 'border-red-400 text-red-400' : 'border-white/70')
+  }, bioPhase === 'scanning' && /*#__PURE__*/React.createElement("span", {
+    className: "absolute inset-0 rounded-2xl border-2 border-white/40",
+    style: {
+      animation: 'faceScanPulse 1.4s ease-out infinite'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, bioPhase === 'success' ? Icon.check : bioPhase === 'failed' ? Icon.close : Icon.faceScan)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-sm font-semibold text-white"
+  }, bioPhase === 'scanning' ? tx('Scanning your face…') : bioPhase === 'success' ? tx('Face recognized') : tx('Face not recognized')))), showInvoice && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setShowInvoice(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-extrabold leading-tight text-foreground"
+  }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 text-sm font-semibold text-primary"
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-[13px] font-semibold text-muted-foreground"
+  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 divide-y divide-border"
+  }, invoiceList.map(iv => /*#__PURE__*/React.createElement("div", {
+    key: iv.inv,
+    className: "flex items-center justify-between gap-3 py-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[15px] font-semibold text-foreground"
+  }, iv.inv), /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'card' : 'cards'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSkip(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -3198,7 +3050,7 @@ function ItemsScreen({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
-    title: order.itemCount + ' ' + tx(order.itemCount === 1 ? 'item' : 'items2')
+    title: order.itemCount + ' ' + tx('Items')
   }), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3209,7 +3061,7 @@ function ItemsScreen({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => openCard(i),
     className: "flex w-full items-center gap-3.5 text-left"
-  }, isGraded(it) ? /*#__PURE__*/React.createElement(Slab, {
+  }, it.grade ? /*#__PURE__*/React.createElement(Slab, {
     item: it,
     className: "h-[74px] w-[53px] shrink-0 shadow-sm"
   }) : /*#__PURE__*/React.createElement(CardImage, {
@@ -3223,174 +3075,27 @@ function ItemsScreen({
     className: "text-xs font-medium text-muted-foreground"
   }, "#", it.cert), /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-foreground"
-  }, tx(it.name)), isGraded(it) ? /*#__PURE__*/React.createElement("div", {
+  }, tx(it.name)), it.grade ? /*#__PURE__*/React.createElement("div", {
     className: "mt-1 text-sm font-bold text-foreground"
   }, it.grade, " ", /*#__PURE__*/React.createElement("span", {
     className: "font-semibold text-muted-foreground"
   }, "\xB7 ", it.sub.replace(/\s*\d+$/, '')), it.auto ? /*#__PURE__*/React.createElement("span", {
     className: "font-semibold text-muted-foreground"
-  }, " \xB7 ", it.auto) : null) : null), /*#__PURE__*/React.createElement("span", {
+  }, " \xB7 ", it.auto) : null) : /*#__PURE__*/React.createElement(Badge, {
+    intent: "neutral",
+    className: "mt-1.5"
+  }, tx(order.group === 'completed' ? 'Shipping to you' : 'In grading'))), /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0 text-muted-foreground"
   }, Icon.chevR)))))));
-}
-
-/* ---------- MOTION PERMISSION ---------- */
-function MotionPermissionSheet({
-  visible,
-  onAllow,
-  onDismiss
-}) {
-  if (!visible) return null;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-50 flex items-end justify-center bg-black/50 p-4",
-    onClick: onDismiss
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-[22px] w-[22px]"
-  }, Icon.device)), /*#__PURE__*/React.createElement("h2", {
-    className: "mt-3.5 text-lg font-extrabold leading-tight text-foreground"
-  }, tx('Enable motion effects?')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx("HobbyX uses your device's motion sensors (Physical activity) to add a 3D tilt and shine effect when your graded cards are revealed. No activity data is recorded or shared. You can skip this and still reveal your cards.")), /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 flex flex-col gap-2.5"
-  }, /*#__PURE__*/React.createElement(Button, {
-    variant: "dark",
-    className: "w-full",
-    onClick: onAllow
-  }, tx('Allow motion')), /*#__PURE__*/React.createElement("button", {
-    onClick: onDismiss,
-    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Not now')))));
-}
-
-/* ---------- FULLSCREEN VIEWER ---------- */
-function CardFullscreenViewer({
-  item,
-  order,
-  initialView,
-  close
-}) {
-  const [view, setView] = useStateG(initialView ?? 0);
-  const [busy, setBusy] = useStateG(null);
-  const graded = isGraded(item);
-  const runAction = action => {
-    if (busy) return;
-    setBusy(action);
-    setTimeout(() => {
-      setBusy(null);
-      window.toast(tx(action === 'save' ? 'Saved to Photos' : 'Shared'), 'success');
-    }, 700);
-  };
-  const Stage = () => view === 2 ? /*#__PURE__*/React.createElement("div", {
-    className: "flex w-full items-stretch justify-center gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-[47%]",
-    style: graded ? {
-      aspectRatio: '0.62'
-    } : null
-  }, graded ? /*#__PURE__*/React.createElement(Slab, {
-    item: item,
-    big: true,
-    face: "front",
-    hideNotes: true,
-    className: "h-full w-full",
-    radius: 0
-  }) : /*#__PURE__*/React.createElement(CardImage, {
-    cert: item.cert,
-    category: item.category,
-    src: item.img,
-    className: "aspect-[5/7] w-full",
-    radius: 0
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "w-[47%]",
-    style: graded ? {
-      aspectRatio: '0.62'
-    } : null
-  }, graded ? /*#__PURE__*/React.createElement(Slab, {
-    item: item,
-    face: "back",
-    className: "h-full w-full",
-    radius: 0
-  }) : /*#__PURE__*/React.createElement(CardBack, {
-    category: item.category
-  }))) : /*#__PURE__*/React.createElement("div", {
-    className: "mx-auto w-[72%]",
-    style: graded ? {
-      aspectRatio: '0.62'
-    } : null
-  }, view === 0 ? graded ? /*#__PURE__*/React.createElement(Slab, {
-    item: item,
-    big: true,
-    face: "front",
-    hideNotes: true,
-    className: "h-full w-full",
-    radius: 0
-  }) : /*#__PURE__*/React.createElement(CardImage, {
-    cert: item.cert,
-    category: item.category,
-    src: item.img,
-    className: "aspect-[5/7] w-full",
-    radius: 0
-  }) : graded ? /*#__PURE__*/React.createElement(Slab, {
-    item: item,
-    big: true,
-    face: "back",
-    className: "h-full w-full",
-    radius: 0
-  }) : /*#__PURE__*/React.createElement(CardBack, {
-    category: item.category
-  }));
-  return /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex flex-col bg-background"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center px-4 pt-3"
-  }, /*#__PURE__*/React.createElement(IconBtn, {
-    onClick: close,
-    "aria-label": tx('Close')
-  }, Icon.close), /*#__PURE__*/React.createElement("div", {
-    className: "min-w-0 flex-1 truncate px-2 text-center text-[15px] font-bold text-foreground"
-  }, tx(item.name))), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-1 items-center justify-center px-5 py-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full rounded-xl border border-border bg-muted/40 p-7"
-  }, /*#__PURE__*/React.createElement(Stage, null))), /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-center gap-2.5 px-5 pb-3"
-  }, ['Front', 'Back', 'Both'].map((v, i) => /*#__PURE__*/React.createElement("button", {
-    key: v,
-    onClick: () => setView(i),
-    className: 'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
-  }, tx(v)))), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-3 border-t border-border px-5 py-4"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => runAction('save'),
-    disabled: !!busy,
-    className: "flex flex-col items-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold text-foreground disabled:opacity-50"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-6 w-6"
-  }, Icon.download), tx('Save')), /*#__PURE__*/React.createElement("button", {
-    onClick: () => runAction('share'),
-    disabled: !!busy,
-    className: "flex flex-col items-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold text-foreground disabled:opacity-50"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-6 w-6"
-  }, Icon.share), tx('Share'))));
 }
 
 /* ---------- CARD DETAIL ---------- */
 function CardDetail({
   item,
-  order,
-  close,
-  openViewer
+  close
 }) {
   const [view, setView] = useStateG(0); // 0 Front · 1 Back · 2 Slab(both)
-  const graded = isGraded(item);
-  // Grading is finished for the order but this card never received a grade.
-  const notGraded = !graded && order && gradesReadyFor(order);
+  const graded = !!item.grade;
   const Front = () => graded ? /*#__PURE__*/React.createElement(Slab, {
     item: item,
     big: true,
@@ -3435,23 +3140,12 @@ function CardDetail({
       className: "h-3.5 w-3.5"
     }, Icon.external)) : '#' + item.cert
   }), /*#__PURE__*/React.createElement("div", {
-    className: "no-scrollbar flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4"
-  }, !gradesReadyFor(order) && /*#__PURE__*/React.createElement("p", {
-    className: "mb-3 px-4 text-justify text-[13px] font-medium leading-normal text-muted-foreground"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-bold"
-  }, tx('Note:')), " ", tx('Scan image provided by PSA. Any minor scratches are likely light reflections on the outer holder; please refer to the final grade for actual card condition.')), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-1 flex-col justify-center"
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    onClick: () => openViewer && openViewer(view),
-    className: "relative flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7 text-left transition-colors hover:bg-muted/60 active:scale-[.995]",
-    "aria-label": tx('View fullscreen')
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-[18px] w-[18px]"
-  }, Icon.expand)), view === 2 ? /*#__PURE__*/React.createElement("div", {
+    className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex min-h-full flex-col justify-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7"
+  }, view === 2 ? /*#__PURE__*/React.createElement("div", {
     className: "flex w-full items-stretch justify-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-[47%]",
@@ -3473,19 +3167,13 @@ function CardDetail({
     }
   }, view === 0 ? /*#__PURE__*/React.createElement(Front, null) : /*#__PURE__*/React.createElement(Back, null))), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex justify-center gap-2.5"
-  }, ['Front', 'Back', 'Both'].map((v, i) => /*#__PURE__*/React.createElement("button", {
+  }, ['Front', 'Back', 'Slab'].map((v, i) => /*#__PURE__*/React.createElement("button", {
     key: v,
     onClick: () => setView(i),
-    className: 'min-w-[56px] rounded-md px-3 py-1.5 text-center text-[13px] font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
+    className: 'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
   }, tx(v)))), /*#__PURE__*/React.createElement("h1", {
-    className: "mt-5 text-center text-[17px] font-bold leading-snug text-foreground"
-  }, tx(item.name)), notGraded && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-lg border border-border bg-card px-3 py-4 text-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-  }, tx('Card Grade')), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-[15px] font-bold text-foreground"
-  }, tx('NOT GRADED'))), graded && /*#__PURE__*/React.createElement("div", {
+    className: "mt-5 text-center text-lg font-bold leading-snug text-foreground"
+  }, tx(item.name)), graded && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 flex items-stretch justify-center gap-2.5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-4 text-center"
@@ -3494,7 +3182,7 @@ function CardDetail({
   }, tx('Card Grade')), /*#__PURE__*/React.createElement("div", {
     className: "text-[28px] font-extrabold leading-none text-foreground"
   }, item.grade), /*#__PURE__*/React.createElement("div", {
-    className: "text-[13px] font-semibold uppercase tracking-wide text-muted-foreground"
+    className: "text-[12px] font-semibold uppercase tracking-wide text-muted-foreground"
   }, item.sub.replace(/\s*\d+$/, ''))), item.auto && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-4 text-center"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3502,13 +3190,13 @@ function CardDetail({
   }, tx('Autograph')), /*#__PURE__*/React.createElement("div", {
     className: "text-[28px] font-extrabold leading-none text-foreground"
   }, item.auto.replace(/AUTO\s*/i, '')), /*#__PURE__*/React.createElement("div", {
-    className: "text-[13px] font-semibold uppercase tracking-wide text-muted-foreground"
+    className: "text-[12px] font-semibold uppercase tracking-wide text-muted-foreground"
   }, tx('PSA/DNA')))), graded && item.notes && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded-lg border border-border bg-card p-4 text-left"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "mb-1 text-[11px] font-bold uppercase tracking-wider text-foreground"
+    className: "mb-2 text-[11px] font-bold uppercase tracking-wider text-foreground"
   }, tx('Grader Notes')), /*#__PURE__*/React.createElement("p", {
-    className: "text-[13px] font-medium leading-normal text-muted-foreground"
+    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
   }, item.notes)))));
 }
 
@@ -3519,7 +3207,7 @@ function GradeReveal({
   close,
   onRevealed
 }) {
-  const graded = order.items.filter(isGraded);
+  const graded = order.items.filter(i => i.grade);
   const [idx, setIdx] = useStateG(0);
   const [phase, setPhase] = useStateG('rise'); // rise → ready → slice → open → emerge → reveal
   const timers = React.useRef([]);
@@ -3766,8 +3454,7 @@ function GradeReveal({
     big: true,
     face: "front",
     className: "h-full w-full",
-    radius: 0,
-    hideNotes: true
+    radius: 0
   }), /*#__PURE__*/React.createElement("div", {
     className: "gr-gloss"
   })), /*#__PURE__*/React.createElement("div", {
@@ -3788,18 +3475,33 @@ function GradeReveal({
   })))))), /*#__PURE__*/React.createElement("div", {
     className: "gr-pack"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "gr-body gr-body-sealed"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "gr-body gr-body-torn"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "gr-tearoff"
-  }), /*#__PURE__*/React.createElement("div", {
+    className: "gr-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gr-sheen"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gr-brand"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gr-label"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "gr-logo",
+    src: HX_LOGO,
+    alt: "HobbyX",
+    draggable: false
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gr-tag"
+  }, tx('Graded'))), /*#__PURE__*/React.createElement("div", {
     className: "gr-mouth"
   }), /*#__PURE__*/React.createElement("div", {
     className: "gr-burst"
   }), /*#__PURE__*/React.createElement("div", {
     className: "gr-cutflash"
   }), /*#__PURE__*/React.createElement("div", {
+    className: "gr-crimp"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gr-crimp-foil"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gr-crimp-stamp"
+  }, "HOBBYX")), /*#__PURE__*/React.createElement("div", {
     className: "gr-blade"
   }, /*#__PURE__*/React.createElement("div", {
     className: "gr-blade-steel"
@@ -3812,7 +3514,7 @@ function GradeReveal({
     ref: sparkRef
   }))), /*#__PURE__*/React.createElement("div", {
     className: "gr-hint"
-  }, tx('Swipe to tear')), /*#__PURE__*/React.createElement("div", {
+  }, tx('Tap to open')), /*#__PURE__*/React.createElement("div", {
     className: "gr-info"
   }, item.auto ? /*#__PURE__*/React.createElement("div", {
     className: "gr-grades"
@@ -3854,7 +3556,7 @@ function GradeReveal({
       e.stopPropagation();
       last ? finishClose() : goNext();
     }
-  }, last ? tx('Done') + ` · ${graded.length} ${tx('revealed')}` : tx('Reveal next'))));
+  }, last ? tx('Done') + ` · ${graded.length} ${graded.length === 1 ? tx('card') : tx('cards')} ${tx('revealed')}` : tx('Reveal next') + ` (${idx + 2}/${graded.length})`)));
 }
 
 /* ---------- NOTIFICATIONS ---------- */
@@ -3993,98 +3695,38 @@ function NotificationsScreen({
     className: "flex h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary text-[15px] font-bold text-foreground transition-colors hover:bg-secondary/80 active:scale-[.99]"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
-  }, Icon.check), tx('Mark all read'))), list.length > 0 && /*#__PURE__*/React.createElement("p", {
-    className: "px-5 pb-4 text-center text-[12px] font-medium text-muted-foreground"
-  }, tx("You've reached the end of your notifications.")));
+  }, Icon.check), tx('Mark all read'))));
 }
 
 /* ---------- ACCOUNT ---------- */
-function DeleteSectionLabel({
-  children,
-  spacious = false
-}) {
-  return /*#__PURE__*/React.createElement("p", {
-    className: 'text-[11px] font-bold uppercase tracking-wide text-muted-foreground ' + (spacious ? 'mb-3' : 'mb-2')
-  }, children);
-}
-function DeleteAckRow({
-  checked,
-  onChange,
-  title,
-  children
-}) {
-  return /*#__PURE__*/React.createElement("label", {
-    className: "delete-account-ack"
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    checked: checked,
-    onChange: e => onChange(e.target.checked)
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "min-w-0"
-  }, title ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
-    className: "delete-account-ack__title"
-  }, title), children && /*#__PURE__*/React.createElement("span", {
-    className: "delete-account-ack__detail"
-  }, children)) : /*#__PURE__*/React.createElement("span", {
-    className: "delete-account-ack__title"
-  }, children)));
-}
 function AccountScreen({
   goBack,
-  appearancePref,
-  setAppearancePref,
+  theme,
+  setTheme,
   onSignOut,
   openAccountInfo,
-  onDeleteAccount,
-  onDeletionScheduled
+  onDeleteAccount
 }) {
   const [notif, setNotif] = useStateG(true);
+  const [bioInvoices, setBioInvoices] = useStateG(() => localStorage.getItem('hobbyx_bio_invoices') !== '0');
+  const toggleBio = v => {
+    setBioInvoices(v);
+    localStorage.setItem('hobbyx_bio_invoices', v ? '1' : '0');
+  };
   const [showPolicies, setShowPolicies] = useStateG(false);
-  const [confirmSignOut, setConfirmSignOut] = useStateG(false);
-  const [pendingExt, setPendingExt] = useStateG(null);
-  const POLICIES = [['Privacy Policy', 'https://hobbyxmarketplace.com/privacy-policy/'], ['Terms of Use', 'https://hobbyxmarketplace.com/terms-and-conditions/'], ['Cookie Policy', 'https://hobbyxmarketplace.com/cookie-policy/']];
-  const openExt = (url, label) => {
-    try {
-      const host = new URL(url).host.replace(/^www\./, '');
-      setPendingExt({
-        url,
-        label: label || host,
-        host
-      });
-    } catch (e) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+  const POLICIES = [['Privacy Policy', 'https://hobbyxmarketplace.com/privacy-policy/'], ['Terms of Use', 'https://hobbyxmarketplace.com/terms-and-conditions/'], ['Shipping Policy', 'https://hobbyxmarketplace.com/shipping-policy/']];
+  const openExt = url => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
   const [confirmDelete, setConfirmDelete] = useStateG(false);
-  const [ackSubmissions, setAckSubmissions] = useStateG(false);
-  const [ackListings, setAckListings] = useStateG(false);
-  const userEmail = ACCOUNT.info.email;
-  const canDelete = ackSubmissions && ackListings;
-  const resetDeleteAcks = () => {
-    setAckSubmissions(false);
-    setAckListings(false);
-  };
-  const closeDelete = () => {
-    setConfirmDelete(false);
-    resetDeleteAcks();
-  };
-  const openDeleteConfirm = () => {
-    resetDeleteAcks();
-    setConfirmDelete(true);
-  };
-  const scheduleDelete = () => {
-    setConfirmDelete(false);
-    resetDeleteAcks();
-    onDeletionScheduled && onDeletionScheduled(userEmail);
-  };
   return /*#__PURE__*/React.createElement("div", {
-    className: "relative flex h-full flex-col bg-background"
+    className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
     title: tx('Account')
@@ -4095,11 +3737,13 @@ function AccountScreen({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground"
   }, ACCOUNT.initials), /*#__PURE__*/React.createElement("div", {
-    className: "flex min-w-0 flex-col justify-center gap-0.5"
+    className: "min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xl font-extrabold tracking-tight text-foreground"
   }, ACCOUNT.name), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-medium text-muted-foreground/80"
+    className: "text-sm font-medium text-muted-foreground"
+  }, ACCOUNT.handle), /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 text-xs font-medium text-muted-foreground/80"
   }, tx(ACCOUNT.member)))), ACCOUNT.groups.map((grp, gi) => /*#__PURE__*/React.createElement(React.Fragment, {
     key: gi
   }, /*#__PURE__*/React.createElement("div", {
@@ -4114,21 +3758,27 @@ function AccountScreen({
     const isAppearance = label === 'Appearance';
     const isLanguage = label === 'Language';
     const isNotifications = label === 'Notifications';
-    const isControl = isAppearance || isLanguage || isNotifications;
+    const isBio = label === 'Biometrics for Invoices';
+    const isControl = isAppearance || isLanguage || isNotifications || isBio;
     const isHelp = label === 'Help Centre';
     const isPolicies = label === 'Terms & Policies';
-    const isContact = label === 'Contact Us';
-    const onRow = label === 'Account Info' ? openAccountInfo : isHelp ? () => openExt('https://hobbyxmarketplace.com/faq/', tx('Help Centre')) : isContact ? () => openExt('https://hobbyxmarketplace.com/contact-us/', tx('Contact Us')) : isPolicies ? () => setShowPolicies(v => !v) : isDelete ? openDeleteConfirm : danger ? () => setConfirmSignOut(true) : undefined;
+    const onRow = label === 'Account Info' ? openAccountInfo : isHelp ? () => openExt('https://hobbyxmarketplace.com/faq/') : isPolicies ? () => setShowPolicies(v => !v) : isDelete ? () => setConfirmDelete(true) : danger ? onSignOut : undefined;
     const rowInner = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
       className: 'flex items-center gap-3 text-[15px] font-semibold ' + (isDelete ? 'text-red-600 dark:text-red-500' : danger ? 'text-primary' : 'text-foreground')
     }, /*#__PURE__*/React.createElement("span", {
       className: 'h-[18px] w-[18px] ' + (isDelete ? 'text-red-600 dark:text-red-500' : 'text-muted-foreground')
-    }, Icon[ic]), tx(label)), isAppearance ? /*#__PURE__*/React.createElement(AppearanceSelect, {
-      value: appearancePref,
-      onChange: setAppearancePref
-    }) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
+    }, Icon[ic]), tx(label)), isAppearance ? /*#__PURE__*/React.createElement("div", {
+      className: "inline-flex items-center rounded-md bg-muted p-0.5"
+    }, [['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
+      key: k,
+      onClick: () => setTheme(k),
+      className: 'rounded px-2.5 py-1 text-xs font-bold transition-colors ' + (theme === k ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')
+    }, tx(l)))) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
       checked: notif,
       onChange: setNotif
+    }) : isBio ? /*#__PURE__*/React.createElement(Switch, {
+      checked: bioInvoices,
+      onChange: toggleBio
     }) : !danger && !isDelete && /*#__PURE__*/React.createElement("span", {
       className: 'h-4 w-4 text-muted-foreground transition-transform ' + (isPolicies && showPolicies ? 'rotate-90' : '')
     }, isHelp ? Icon.external : Icon.chevR));
@@ -4146,125 +3796,59 @@ function AccountScreen({
       className: "border-t border-border bg-muted/40"
     }, POLICIES.map(([plabel, purl]) => /*#__PURE__*/React.createElement("button", {
       key: plabel,
-      onClick: () => openExt(purl, tx(plabel)),
+      onClick: () => openExt(purl),
       className: "flex w-full items-center justify-between py-2.5 pl-12 pr-4 text-left transition-colors hover:bg-accent/40"
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-[14px] font-medium text-muted-foreground"
     }, tx(plabel)), /*#__PURE__*/React.createElement("span", {
       className: "h-3.5 w-3.5 text-muted-foreground/70"
     }, Icon.external)))));
-  })))))), confirmSignOut && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
-    onClick: () => setConfirmSignOut(false)
+  }))), grp.group === 'Preferences' && /*#__PURE__*/React.createElement("div", {
+    className: "mt-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-lg font-extrabold leading-tight text-foreground"
-  }, tx('Sign out?')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx("You'll need to log in again to access your account.")), /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 flex flex-col gap-2.5"
-  }, /*#__PURE__*/React.createElement(Button, {
-    variant: "dark",
-    className: "w-full",
-    onClick: () => {
-      setConfirmSignOut(false);
-      onSignOut && onSignOut();
-    }
-  }, tx('Sign Out')), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setConfirmSignOut(false),
-    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel'))))), pendingExt && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
-    onClick: () => setPendingExt(null)
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
+    className: "mb-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"
+  }, tx('Contact Us')), /*#__PURE__*/React.createElement("div", {
+    className: "overflow-hidden rounded-lg border border-border bg-card"
+  }, [['Facebook', 'facebook', 'https://www.facebook.com/HobbyXStore', '@HobbyXStore'], ['Instagram', 'instagram', 'https://www.instagram.com/hobbyxmarketplace', '@hobbyxmarketplace']].map(([label, ic, url, handle], si) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    onClick: () => openExt(url),
+    className: 'flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors hover:bg-accent/40 ' + (si > 0 ? 'border-t border-border' : '')
   }, /*#__PURE__*/React.createElement("span", {
-    className: "h-[22px] w-[22px]"
-  }, Icon.external)), /*#__PURE__*/React.createElement("h2", {
-    className: "mt-3.5 text-lg font-extrabold leading-tight text-foreground"
-  }, tx('Leaving HobbyX')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx("You'll open the"), " ", tx(pendingExt.label), " ", tx('page on'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "font-semibold text-foreground"
-  }, pendingExt.host), " ", tx('in your browser.')), /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 flex flex-col gap-2.5"
-  }, /*#__PURE__*/React.createElement(Button, {
-    variant: "dark",
-    className: "w-full",
-    onClick: () => {
-      const a = document.createElement('a');
-      a.href = pendingExt.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setPendingExt(null);
-    }
-  }, tx('Continue')), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPendingExt(null),
-    className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel'))))), confirmDelete && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex items-end justify-center overflow-hidden bg-black/50 p-4",
-    onClick: closeDelete
+    className: "flex items-center gap-3 text-[15px] font-semibold text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-[18px] w-[18px] text-muted-foreground"
+  }, Icon[ic]), tx(label)), /*#__PURE__*/React.createElement("span", {
+    className: "text-[13px] font-medium text-muted-foreground"
+  }, handle))))))), /*#__PURE__*/React.createElement("div", {
+    className: "mt-7 flex flex-col items-center gap-4 border-t border-border pt-5"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "whitespace-nowrap text-center text-[11px] font-medium text-muted-foreground/80"
+  }, "\xA9 2025 HobbyX Marketplace Limited. ", tx('All Rights Reserved')))), confirmDelete && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setConfirmDelete(false)
   }, /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-sheet rounded-2xl bg-card shadow-xl",
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-sheet__header"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-500"
+    className: "flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-500"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-[22px] w-[22px]"
   }, Icon.trash)), /*#__PURE__*/React.createElement("h2", {
-    className: "text-lg font-extrabold leading-tight text-foreground"
-  }, tx('Delete your account?')))), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-sheet__body no-scrollbar"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Your account will be scheduled for deletion. You will have a period of 30 days to reactivate your account using the link sent to your registered email address. If your account is not reactivated within this period, your account and all associated data will be permanently deleted and cannot be recovered.')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-3 text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('The reactivation link will be sent to'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-foreground"
-  }, userEmail)), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-section"
-  }, /*#__PURE__*/React.createElement(DeleteSectionLabel, null, tx('What will be deleted')), /*#__PURE__*/React.createElement("p", {
-    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Your profile, preferences, and other personal data associated with your account.'))), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-note"
-  }, /*#__PURE__*/React.createElement(DeleteSectionLabel, null, tx('Data we may retain')), /*#__PURE__*/React.createElement("p", {
-    className: "text-[12px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Certain transaction records may be retained where required for legal, tax, or accounting purposes. Such records will not be used for marketing.'))), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-section"
-  }, /*#__PURE__*/React.createElement(DeleteSectionLabel, {
-    spacious: true
-  }, tx('Confirmation required')), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-acks"
-  }, /*#__PURE__*/React.createElement(DeleteAckRow, {
-    checked: ackSubmissions,
-    onChange: setAckSubmissions,
-    title: tx('Grading submissions')
-  }, tx('I understand that if my account is permanently deleted, I will lose access to any in-progress grading submissions, including tracking and related order information.')), /*#__PURE__*/React.createElement(DeleteAckRow, {
-    checked: ackListings,
-    onChange: setAckListings,
-    title: tx('Marketplace listings')
-  }, tx('I understand that if my account is permanently deleted, any active HobbyX Marketplace listings will be removed and I will no longer have access to related sale information.')))), /*#__PURE__*/React.createElement("div", {
-    className: "delete-account-sheet__actions"
+    className: "mt-3.5 text-lg font-extrabold leading-tight text-foreground"
+  }, tx('Delete your account?')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-1.5 text-[13px] font-medium leading-relaxed text-muted-foreground"
+  }, tx('This permanently removes your profile, saved cards, preferences and personal data. For legal and accounting purposes, HobbyX retains a record of your past transactions. This action can\u2019t be undone.')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-5 flex flex-col gap-2.5"
   }, /*#__PURE__*/React.createElement("button", {
-    disabled: !canDelete,
-    onClick: scheduleDelete,
-    className: "flex h-12 w-full items-center justify-center rounded-md bg-red-600 text-[15px] font-bold text-white transition-colors hover:bg-red-700 active:scale-[.99] disabled:pointer-events-none disabled:opacity-50"
+    onClick: () => {
+      setConfirmDelete(false);
+      onDeleteAccount && onDeleteAccount();
+    },
+    className: "flex h-12 w-full items-center justify-center rounded-md bg-red-600 text-[15px] font-bold text-white transition-colors hover:bg-red-700 active:scale-[.99]"
   }, tx('Delete account')), /*#__PURE__*/React.createElement("button", {
-    onClick: closeDelete,
+    onClick: () => setConfirmDelete(false),
     className: "flex h-12 w-full items-center justify-center rounded-md text-[15px] font-bold text-foreground transition-colors hover:bg-accent active:scale-[.99]"
-  }, tx('Cancel')))))));
+  }, tx('Cancel'))))));
 }
 
 /* ---------- ACCOUNT INFO (editable form) ---------- */
@@ -4356,7 +3940,7 @@ function AccountInfoScreen({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
-    title: tx('Account info')
+    title: tx('Account Info')
   }), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
@@ -4716,7 +4300,7 @@ Object.assign(window, {
   SkeletonScreen
 });
 
-/* ===== app2/auth.jsx ===== */
+// ===== auth.jsx =====
 /* HobbyX — auth screens (shadcn) */
 const {
   useState: useAuthState,
@@ -4822,6 +4406,9 @@ function Legal({
   }, {
     label: 'Terms of Use',
     url: 'https://hobbyxmarketplace.com/terms-and-conditions/'
+  }, {
+    label: 'Shipping Policy',
+    url: 'https://hobbyxmarketplace.com/shipping-policy/'
   }];
   const host = pending ? new URL(pending.url).host : '';
   return /*#__PURE__*/React.createElement("div", {
@@ -4853,7 +4440,7 @@ function Legal({
     className: "h-[18px] w-[18px]"
   }, Icon.instagram))), /*#__PURE__*/React.createElement("p", {
     className: "whitespace-nowrap text-center text-[11px] font-medium text-muted-foreground/80"
-  }, "\xA9 2026 HobbyX Marketplace Limited. ", tx('All Rights Reserved')), pending && /*#__PURE__*/React.createElement("div", {
+  }, "\xA9 2025 HobbyX Marketplace Limited. ", tx('All Rights Reserved')), pending && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setPending(null)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4914,210 +4501,6 @@ function Splash({
   }, "Volk Innovatives")));
 }
 
-const MOTION_PROMPT_KEY = 'hobbyx_motion_prompt';
-const DEMO_VERIFY_EMAIL = 'verify@gmail.com';
-const REGISTER_PENDING_EMAIL = 'pending@email.com';
-const REGISTER_REJECTED_EMAIL = 'rejected@email.com';
-function hasAnsweredMotionPrompt() {
-  try {
-    return localStorage.getItem(MOTION_PROMPT_KEY) === '1';
-  } catch (e) {
-    return true;
-  }
-}
-function markMotionPromptAnswered() {
-  try {
-    localStorage.setItem(MOTION_PROMPT_KEY, '1');
-  } catch (e) {}
-}
-function formatResendCooldown(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return m > 0 ? m + ':' + String(s).padStart(2, '0') : s + 's';
-}
-function formatDeletionPurgeDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-function AuthBackBar({
-  onPress,
-  disabled
-}) {
-  return /*#__PURE__*/React.createElement("button", {
-    onClick: onPress,
-    disabled: disabled,
-    className: "inline-flex items-center gap-1 px-7 pt-[58px] text-[15px] font-bold text-foreground disabled:opacity-50"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-5 w-5"
-  }, Icon.chevL), tx('Back'));
-}
-function VerificationResendHint({
-  email,
-  variant,
-  onResendPress
-}) {
-  const isInline = variant === 'inline';
-  const [cooldown, setCooldown] = useAuthState(0);
-  const [isResending, setIsResending] = useAuthState(false);
-  const [success, setSuccess] = useAuthState('');
-  useAuthEffect(() => {
-    if (cooldown <= 0) return undefined;
-    const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [cooldown]);
-  const resend = () => {
-    if (isResending || cooldown > 0) return;
-    onResendPress && onResendPress();
-    setIsResending(true);
-    setTimeout(() => {
-      setIsResending(false);
-      setSuccess(tx('Verification email sent.'));
-      setCooldown(60);
-    }, 700);
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: (isInline ? 'mt-4 ' : 'mt-5 ') + 'text-center'
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-[13px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Didn’t receive it? Check your spam folder or')), cooldown > 0 ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-2 text-[13px] font-medium text-muted-foreground"
-  }, tx('Resend available in {{time}}').replace('{{time}}', formatResendCooldown(cooldown))) : /*#__PURE__*/React.createElement("button", {
-    onClick: resend,
-    disabled: isResending,
-    className: "mt-2 text-[13px] font-bold text-primary disabled:opacity-50"
-  }, isResending ? tx('Loading...') : tx('resend verification email')), success && /*#__PURE__*/React.createElement("p", {
-    className: "mt-2 text-[12px] font-semibold text-success"
-  }, success));
-}
-function AuthEmailSentSuccessView({
-  identifier,
-  bodySuffixKey,
-  onBackToLogin,
-  showResend
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col items-center text-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-success/10 text-success"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-9 w-9"
-  }, Icon.check)), /*#__PURE__*/React.createElement("h1", {
-    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
-  }, tx('Check your email')), /*#__PURE__*/React.createElement("p", {
-    className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
-  }, tx('If an account matches'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-foreground"
-  }, identifier), tx(bodySuffixKey)), showResend && /*#__PURE__*/React.createElement(VerificationResendHint, {
-    email: identifier,
-    variant: "panel"
-  }), /*#__PURE__*/React.createElement(Button, {
-    className: "mt-6 w-full",
-    size: "lg",
-    onClick: onBackToLogin
-  }, tx('Back to Login')));
-}
-function VerifyEmail({
-  email,
-  go
-}) {
-  if (!email) {
-    go('login');
-    return null;
-  }
-  return /*#__PURE__*/React.createElement("div", {
-    className: "px-7 pb-8"
-  }, /*#__PURE__*/React.createElement(AuthBackBar, {
-    onPress: () => go('login')
-  }), /*#__PURE__*/React.createElement(Brand, {
-    className: "h-6",
-    wrap: "pb-2"
-  }), /*#__PURE__*/React.createElement(AuthEmailSentSuccessView, {
-    identifier: email,
-    bodySuffixKey: ", we've sent a link to verify your email.",
-    onBackToLogin: () => go('login'),
-    showResend: true
-  }));
-}
-function RegisterOutcome({
-  variant,
-  go
-}) {
-  const pending = variant === 'pending';
-  return /*#__PURE__*/React.createElement("div", {
-    className: "flex min-h-full flex-col px-7 py-12 text-center"
-  }, /*#__PURE__*/React.createElement(AuthBackBar, {
-    onPress: () => go('login')
-  }), /*#__PURE__*/React.createElement(Brand, {
-    className: "h-6",
-    wrap: "pb-2"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: 'mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full ' + (pending ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-500')
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-9 w-9"
-  }, pending ? Icon.clock : Icon.alert)), /*#__PURE__*/React.createElement("h1", {
-    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
-  }, tx(pending ? 'Account pending approval' : 'Account could not be activated')), /*#__PURE__*/React.createElement("p", {
-    className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
-  }, tx(pending ? "Your account is waiting for approval. We'll email you when it's ready." : 'Your account could not be activated.')), /*#__PURE__*/React.createElement(Button, {
-    className: "mt-6 w-full max-w-[300px]",
-    size: "lg",
-    onClick: () => go('login')
-  }, tx('Back to Login')));
-}
-function DeletionPendingScreen({
-  email,
-  onReactivate,
-  onSignOut
-}) {
-  const purgeDate = formatDeletionPurgeDate();
-  const days = 30;
-  const [busy, setBusy] = useAuthState(false);
-  const scheduleDetail = tx('Scheduled for {{date}} ({{days}} days remaining).').replace('{{date}}', purgeDate).replace('{{days}}', String(days));
-  const reactivate = () => {
-    if (busy) return;
-    setBusy(true);
-    setTimeout(() => {
-      setBusy(false);
-      onReactivate && onReactivate();
-    }, 700);
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: "flex h-full flex-col bg-background"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "no-scrollbar flex-1 overflow-y-auto px-7 pb-8"
-  }, /*#__PURE__*/React.createElement(AuthBackBar, {
-    onPress: onSignOut,
-    disabled: busy
-  }), /*#__PURE__*/React.createElement(Brand, {
-    className: "h-6",
-    wrap: "pb-2"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col items-center text-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary/10 text-primary"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-9 w-9"
-  }, Icon.clock)), /*#__PURE__*/React.createElement("h1", {
-    className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
-  }, tx('Account scheduled for deletion')), /*#__PURE__*/React.createElement("p", {
-    className: "mx-auto mt-3 max-w-[320px] text-sm font-medium leading-relaxed text-muted-foreground"
-  }, tx('Your account is in a 30-day grace period. After that, your profile and personal data will be permanently removed.'), " ", scheduleDetail, " ", tx('A reactivation link was also sent to'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-foreground"
-  }, email), "."), /*#__PURE__*/React.createElement(Button, {
-    className: "mt-6 w-full max-w-[320px]",
-    size: "lg",
-    disabled: busy,
-    onClick: reactivate
-  }, busy ? /*#__PURE__*/React.createElement("span", {
-    className: "spin"
-  }) : tx('Reactivate account')))));
-}
-
 /* LOGIN */
 const DEMO_EMAIL = 'user@gmail.com',
   DEMO_PW = 'Test@123';
@@ -5132,8 +4515,6 @@ function Login({
   const [t, setT] = useAuthState(false);
   const [load, setLoad] = useAuthState(false);
   const [err, setErr] = useAuthState(null);
-  const [verificationNotice, setVerificationNotice] = useAuthState(null);
-  const [verificationResetKey, setVerificationResetKey] = useAuthState(0);
   const valid = emailOk(email) && pw.length >= 1;
   const submit = () => {
     setT(true);
@@ -5143,34 +4524,29 @@ function Login({
       setErr('no-connection');
       return;
     }
-    if (verificationNotice) setVerificationResetKey(k => k + 1);
     setLoad(true);
     setTimeout(() => {
       setLoad(false);
-      const normalized = email.trim().toLowerCase();
-      if (normalized === DEMO_VERIFY_EMAIL && pw === DEMO_PW) {
-        setVerificationNotice({
-          email: normalized
-        });
+      // demo credentials: user@gmail.com / Test@123
+      if (email.trim().toLowerCase() !== DEMO_EMAIL) {
+        setErr('no-account');
         return;
       }
-      if (normalized !== DEMO_EMAIL || pw !== DEMO_PW) {
-        setVerificationNotice(null);
-        setErr('bad-credentials');
+      if (pw !== DEMO_PW) {
+        setErr('bad-password');
         return;
       }
-      setVerificationNotice(null);
       if (keep) localStorage.setItem('hobbyx_keep', '1');
       onAuthed();
     }, 700);
   };
   const errMsg = {
     'no-connection': 'No internet connection. Check your network and try again.',
-    'bad-credentials': 'Incorrect email or password. Please try again.'
+    'no-account': 'We couldn’t find an account with that email address.',
+    'bad-password': 'Incorrect password. Please try again.'
   }[err];
-  const credErr = err === 'bad-credentials';
-  const verifyAlert = verificationNotice ? tx('Check your email and tap the activation link before signing in.') : null;
-  const alertMessage = verifyAlert || err && tx(errMsg);
+  const pwErr = err === 'bad-password';
+  const emErr = err === 'no-account';
   return /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-full flex-col justify-center px-7 py-8"
   }, /*#__PURE__*/React.createElement(Brand, {
@@ -5178,9 +4554,9 @@ function Login({
     wrap: "pb-2"
   }), /*#__PURE__*/React.createElement("h1", {
     className: "mt-4 text-center text-[28px] font-extrabold tracking-tight text-foreground"
-  }, tx('Log In')), alertMessage && /*#__PURE__*/React.createElement("div", {
+  }, tx('Log In')), err && /*#__PURE__*/React.createElement("div", {
     className: "mt-5"
-  }, /*#__PURE__*/React.createElement(Alert, null, alertMessage)), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Alert, null, tx(errMsg))), /*#__PURE__*/React.createElement("div", {
     className: "mt-6 space-y-4"
   }, /*#__PURE__*/React.createElement(Field, {
     label: tx('E-mail'),
@@ -5192,11 +4568,10 @@ function Login({
     onChange: e => {
       setEmail(e.target.value);
       setErr(null);
-      setVerificationNotice(null);
     },
     placeholder: "you@email.com",
     autoCapitalize: "none",
-    className: inputCls + (t && !emailOk(email) || credErr ? ' border-red-400' : '')
+    className: inputCls + (t && !emailOk(email) || emErr ? ' border-red-400' : '')
   })), /*#__PURE__*/React.createElement(Field, {
     label: tx('Password'),
     req: true,
@@ -5208,7 +4583,7 @@ function Login({
       setErr(null);
     },
     placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
-    invalid: t && pw.length < 1 || credErr
+    invalid: t && pw.length < 1 || pwErr
   }))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setKeep(k => !k),
     className: "mt-4 flex items-center gap-2.5"
@@ -5218,15 +4593,8 @@ function Login({
     className: "h-3 w-3"
   }, Icon.check)), /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-sm font-semibold text-muted-foreground"
-  }, tx('Keep me signed in'))), verificationNotice && /*#__PURE__*/React.createElement(VerificationResendHint, {
-    key: verificationResetKey,
-    email: verificationNotice.email,
-    variant: "inline",
-    onResendPress: () => setVerificationNotice({
-      email: verificationNotice.email
-    })
-  }), /*#__PURE__*/React.createElement(Button, {
-    className: 'mt-6 w-full' + (verificationNotice ? ' mt-4' : ''),
+  }, tx('Keep me signed in'))), /*#__PURE__*/React.createElement(Button, {
+    className: "mt-6 w-full",
     size: "lg",
     disabled: load,
     onClick: submit
@@ -5236,7 +4604,7 @@ function Login({
     className: "mt-3 flex items-center justify-center gap-2 rounded-md bg-muted/60 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5"
-  }, Icon.user), tx('Demo login'), ": user@gmail.com / Test@123 · ", tx('Unverified'), ": ", DEMO_VERIFY_EMAIL, " / ", DEMO_PW), /*#__PURE__*/React.createElement("button", {
+  }, Icon.user), tx('Demo login'), ": user@gmail.com / Test@123"), /*#__PURE__*/React.createElement("button", {
     onClick: () => go('reset'),
     className: "mt-3 block w-full text-center text-sm font-semibold text-muted-foreground hover:text-foreground"
   }, tx('Forgot your password?')), /*#__PURE__*/React.createElement("div", {
@@ -5288,6 +4656,7 @@ function Register({
   const mismatch = f.cpw.length > 0 && f.pw !== f.cpw; // live mismatch (no submit needed)
   const pwOk = pwAllOk(f.pw);
   const phoneDigits = f.phone.replace(/\D/g, '').length;
+  const [sent, setSent] = useAuthState(false);
   const valid = f.first.trim() && f.last.trim() && emailOk(f.email) && pwOk && match && phoneDigits >= 6;
   const submit = () => {
     setT(true);
@@ -5300,26 +4669,42 @@ function Register({
     setLoad(true);
     setTimeout(() => {
       setLoad(false);
-      const normalized = f.email.trim().toLowerCase();
-      if (normalized === REGISTER_PENDING_EMAIL) {
-        go('register-pending');
-        return;
-      }
-      if (normalized === REGISTER_REJECTED_EMAIL) {
-        go('register-rejected');
-        return;
-      }
-      go('verify-email:' + normalized);
+      setSent(true);
     }, 800);
   };
   const phoneError = phoneBad ? tx('Only numbers are allowed.') : t && phoneDigits < 6 ? tx('Enter a valid number.') : null;
+  if (sent) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "flex min-h-full flex-col items-center justify-center px-7 py-12 text-center"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex h-[72px] w-[72px] items-center justify-center rounded-full bg-success/10 text-success"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "h-9 w-9"
+    }, Icon.check)), /*#__PURE__*/React.createElement("h1", {
+      className: "mt-5 text-[24px] font-extrabold tracking-tight text-foreground"
+    }, tx('Verify your email')), /*#__PURE__*/React.createElement("p", {
+      className: "mx-auto mt-3 max-w-[300px] text-sm font-medium leading-relaxed text-muted-foreground"
+    }, tx('We’ve sent a verification link to'), " ", /*#__PURE__*/React.createElement("span", {
+      className: "font-bold text-foreground"
+    }, f.email), ". ", tx('Please check your inbox and click the link to activate your account.')), /*#__PURE__*/React.createElement("p", {
+      className: "mx-auto mt-3 max-w-[300px] text-[13px] font-medium leading-relaxed text-muted-foreground"
+    }, tx('Didn’t receive it? Check your spam folder or'), " ", /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setSent(false);
+        setLoad(false);
+      },
+      className: "font-bold text-primary"
+    }, tx('try again')), "."), /*#__PURE__*/React.createElement(Button, {
+      className: "mt-6 w-full",
+      size: "lg",
+      onClick: () => go('login')
+    }, tx('Go to Login')));
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "px-7"
-  }, /*#__PURE__*/React.createElement(AuthBackBar, {
-    onPress: () => go('login')
-  }), /*#__PURE__*/React.createElement(Brand, {
+  }, /*#__PURE__*/React.createElement(Brand, {
     className: "h-12",
-    wrap: "pt-2 pb-0"
+    wrap: "pt-[58px] pb-0"
   }), /*#__PURE__*/React.createElement("h1", {
     className: "mt-5 text-center text-[28px] font-extrabold leading-none tracking-tight text-foreground"
   }, tx('Create account')), err && /*#__PURE__*/React.createElement("div", {
@@ -5402,8 +4787,6 @@ function Register({
   }, load ? /*#__PURE__*/React.createElement("span", {
     className: "spin"
   }) : tx('Register')), /*#__PURE__*/React.createElement("p", {
-    className: "mt-3 text-center text-[11px] font-medium text-muted-foreground"
-  }, tx('Demo'), ": ", REGISTER_PENDING_EMAIL, " / ", REGISTER_REJECTED_EMAIL), /*#__PURE__*/React.createElement("p", {
     className: "mt-4 text-center text-[13px] font-medium leading-relaxed text-muted-foreground"
   }, tx('By signing up, you agree to the'), " ", /*#__PURE__*/React.createElement("button", {
     onClick: () => go('legal:Terms of Service'),
@@ -5530,7 +4913,7 @@ Object.assign(window, {
   LegalPage
 });
 
-/* ===== app2/tweaks-panel.jsx ===== */
+// ===== tweaks-panel.jsx =====
 // @ds-adherence-ignore -- omelette starter scaffold (raw elements/hex/px by design)
 
 /* BEGIN USAGE */
@@ -6194,7 +5577,7 @@ Object.assign(window, {
   TweakButton
 });
 
-/* ===== app2/root.jsx ===== */
+// ===== root.jsx =====
 /* HobbyX — root: router (auth → grading), phone frame, theme */
 const {
   useState: useRootState,
@@ -6250,8 +5633,8 @@ function Toaster() {
   }, toast.msg));
 }
 function GradingApp({
-  appearancePref,
-  setAppearancePref,
+  theme,
+  setTheme,
   offline,
   empty,
   gradingOnly,
@@ -6262,10 +5645,7 @@ function GradingApp({
     name: 'list'
   }]);
   const [card, setCard] = useRootState(null);
-  const [viewer, setViewer] = useRootState(null);
   const [reveal, setReveal] = useRootState(false);
-  const [motionSheet, setMotionSheet] = useRootState(false);
-  const [deletionPending, setDeletionPending] = useRootState(null);
   const [revealedIds, setRevealedIds] = useRootState([]);
   const [highlightId, setHighlightId] = useRootState(null);
   const top = stack[stack.length - 1];
@@ -6279,16 +5659,9 @@ function GradingApp({
       name: 'list'
     }]);
     setCard(null);
-    setViewer(null);
     setReveal(false);
   };
-  const requestReveal = () => {
-    if (hasAnsweredMotionPrompt()) {
-      setReveal(true);
-      return;
-    }
-    setMotionSheet(true);
-  };
+
   // "Loading" phase: show a matching skeleton for ~2s every time a page is opened,
   // then reveal the real screen — all without leaving the Loading tab.
   const skVariant = card != null ? 'card' : top.name === 'accountinfo' ? 'account' : top.name;
@@ -6309,20 +5682,7 @@ function GradingApp({
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "relative h-full bg-background"
-  }, deletionPending ? /*#__PURE__*/React.createElement(DeletionPendingScreen, {
-    email: deletionPending,
-    onReactivate: () => {
-      setDeletionPending(null);
-      window.toast(tx('Account deletion has been cancelled.'), 'success');
-    },
-    onSignOut: () => {
-      try {
-        localStorage.removeItem('hobbyx_keep');
-      } catch (e) {}
-      setDeletionPending(null);
-      window.location.href = 'index.html';
-    }
-  }) : /*#__PURE__*/React.createElement(React.Fragment, null, top.name === 'list' && /*#__PURE__*/React.createElement(ListScreen, {
+  }, top.name === 'list' && /*#__PURE__*/React.createElement(ListScreen, {
     tab: tab,
     setTab: onTab,
     unread: unread,
@@ -6346,7 +5706,7 @@ function GradingApp({
     empty: empty,
     openOrder: id => {
       const o = ORDERS.find(x => x.id === id);
-      if (!o || isOrderPreDetail(o)) {
+      if (!o || o.locked) {
         setTab('progress');
         setStack([{
           name: 'list'
@@ -6363,8 +5723,8 @@ function GradingApp({
     }
   }), top.name === 'account' && /*#__PURE__*/React.createElement(AccountScreen, {
     goBack: pop,
-    appearancePref: appearancePref,
-    setAppearancePref: setAppearancePref,
+    theme: theme,
+    setTheme: setTheme,
     openAccountInfo: () => push({
       name: 'accountinfo'
     }),
@@ -6374,8 +5734,12 @@ function GradingApp({
       } catch (e) {}
       window.location.href = 'index.html';
     },
-    onDeleteAccount: () => {},
-    onDeletionScheduled: email => setDeletionPending(email)
+    onDeleteAccount: () => {
+      try {
+        localStorage.removeItem('hobbyx_keep');
+      } catch (e) {}
+      window.location.href = 'index.html';
+    }
   }), top.name === 'accountinfo' && /*#__PURE__*/React.createElement(AccountInfoScreen, {
     goBack: pop,
     openLegal: () => {}
@@ -6388,7 +5752,7 @@ function GradingApp({
       orderId: order.id
     }),
     openCard: i => setCard(i),
-    startReveal: requestReveal,
+    startReveal: () => setReveal(true),
     markRevealed: () => setRevealedIds(ids => ids.includes(order.id) ? ids : [...ids, order.id])
   }), top.name === 'items' && order && /*#__PURE__*/React.createElement(ItemsScreen, {
     order: order,
@@ -6398,59 +5762,37 @@ function GradingApp({
     className: "absolute inset-0 z-30 bg-background"
   }, /*#__PURE__*/React.createElement(CardDetail, {
     item: order.items[card],
-    order: order,
-    close: () => {
-      setCard(null);
-      setViewer(null);
-    },
-    openViewer: v => setViewer({
-      view: v
-    })
-  }), viewer && /*#__PURE__*/React.createElement(CardFullscreenViewer, {
-    item: order.items[card],
-    order: order,
-    initialView: viewer.view,
-    close: () => setViewer(null)
+    close: () => setCard(null)
   })), order && /*#__PURE__*/React.createElement(GradeReveal, {
     order: order,
     show: reveal,
     close: () => setReveal(false),
     onRevealed: () => setRevealedIds(ids => ids.includes(order.id) ? ids : [...ids, order.id])
-  }), /*#__PURE__*/React.createElement(MotionPermissionSheet, {
-    visible: motionSheet,
-    onAllow: () => {
-      markMotionPromptAnswered();
-      setMotionSheet(false);
-      setReveal(true);
-    },
-    onDismiss: () => {
-      markMotionPromptAnswered();
-      setMotionSheet(false);
-      setReveal(true);
-    }
-  })));
+  }));
 }
 function AuthFlow({
   onAuthed,
   showCredit,
   offline
 }) {
-  const [route, setRoute] = useRootState('login');
-  const [verifyEmail, setVerifyEmail] = useRootState('');
-  const go = r => {
-    if (r.startsWith('verify-email:')) {
-      setVerifyEmail(r.slice('verify-email:'.length));
-      setRoute('verify-email');
+  const [route, setRoute] = useRootState('splash');
+  const go = r => setRoute(r);
+  const splashDone = () => {
+    if (localStorage.getItem('hobbyx_keep') === '1') {
+      onAuthed();
       return;
     }
-    setRoute(r);
+    setRoute('login');
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar relative flex-1 overflow-y-auto"
-  }, /*#__PURE__*/React.createElement(LangToggle, {
+  }, route !== 'splash' && /*#__PURE__*/React.createElement(LangToggle, {
     className: "absolute right-5 top-3 z-10"
+  }), route === 'splash' && /*#__PURE__*/React.createElement(Splash, {
+    onDone: splashDone,
+    showCredit: showCredit
   }), route === 'login' && /*#__PURE__*/React.createElement(Login, {
     go: go,
     onAuthed: onAuthed,
@@ -6459,15 +5801,6 @@ function AuthFlow({
     go: go,
     onAuthed: onAuthed,
     offline: offline
-  }), route === 'verify-email' && /*#__PURE__*/React.createElement(VerifyEmail, {
-    email: verifyEmail,
-    go: go
-  }), route === 'register-pending' && /*#__PURE__*/React.createElement(RegisterOutcome, {
-    variant: "pending",
-    go: go
-  }), route === 'register-rejected' && /*#__PURE__*/React.createElement(RegisterOutcome, {
-    variant: "rejected",
-    go: go
   }), route === 'reset' && /*#__PURE__*/React.createElement(Reset, {
     go: go,
     offline: offline
@@ -6511,23 +5844,11 @@ function hexToHsl(hex) {
   }
   return Math.round(h * 360) + ' ' + Math.round(s * 100) + '% ' + Math.round(l * 100) + '%';
 }
-function resolveAppearanceTheme(pref) {
-  if (pref === 'dark' || pref === 'light') return pref;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   useLang(); // re-render whole tree when language changes
-  const [appearancePref, setAppearancePref] = useRootState(() => {
-    try {
-      return localStorage.getItem('hobbyx_appearance') || localStorage.getItem('hobbyx_theme') || 'system';
-    } catch (e) {
-      return 'system';
-    }
-  });
-  const [theme, setTheme] = useRootState(() => resolveAppearanceTheme(appearancePref));
+  const [theme, setTheme] = useRootState(() => localStorage.getItem('hobbyx_theme') || 'light');
   const [phase, setPhase] = useRootState('auth'); // auth | app
-  const [booting, setBooting] = useRootState(true); // full-screen splash overlay (covers status bar)
   const [simOffline, setSimOffline] = useRootState(false);
   const realOnline = useOnline();
   const offline = simOffline || !realOnline;
@@ -6535,18 +5856,8 @@ function App() {
   const PW = 390,
     PH = 820;
   useRootEffect(() => {
-    try {
-      localStorage.setItem('hobbyx_appearance', appearancePref);
-    } catch (e) {}
-    setTheme(resolveAppearanceTheme(appearancePref));
-  }, [appearancePref]);
-  useRootEffect(() => {
-    if (appearancePref !== 'system') return undefined;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const syncSystemTheme = () => setTheme(resolveAppearanceTheme('system'));
-    mq.addEventListener('change', syncSystemTheme);
-    return () => mq.removeEventListener('change', syncSystemTheme);
-  }, [appearancePref]);
+    localStorage.setItem('hobbyx_theme', theme);
+  }, [theme]);
   useRootEffect(() => {
     const fit = () => {
       const aH = window.innerHeight - 130,
@@ -6557,16 +5868,6 @@ function App() {
     window.addEventListener('resize', fit);
     return () => window.removeEventListener('resize', fit);
   }, []);
-  const bootDone = () => {
-    setBooting(false);
-    if (localStorage.getItem('hobbyx_keep') === '1') {
-      setPhase('app');
-      window.toast(tx('Login successful'), 'success');
-    }
-  };
-  useRootEffect(() => {
-    if (phase === 'auth') setBooting(true);
-  }, [phase]);
   const accentHsl = hexToHsl(t.accent);
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -6594,8 +5895,8 @@ function App() {
     className: "inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-md ring-1 ring-black/5"
   }, [['light', 'Light', Icon.sun], ['dark', 'Dark', Icon.moon]].map(([k, l, ic]) => /*#__PURE__*/React.createElement("button", {
     key: k,
-    onClick: () => setAppearancePref(k),
-    className: 'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors ' + (appearancePref === k ? 'bg-neutral-900 text-white' : 'text-neutral-500')
+    onClick: () => setTheme(k),
+    className: 'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors ' + (theme === k ? 'bg-neutral-900 text-white' : 'text-neutral-500')
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
   }, ic), l))), /*#__PURE__*/React.createElement("button", {
@@ -6639,18 +5940,15 @@ function App() {
     showCredit: t.volkCredit,
     offline: offline
   }) : /*#__PURE__*/React.createElement(GradingApp, {
-    appearancePref: appearancePref,
-    setAppearancePref: setAppearancePref,
+    theme: theme,
+    setTheme: setTheme,
     offline: offline,
     empty: phase === 'empty',
     gradingOnly: phase === 'gradingonly',
     skeleton: phase === 'loading'
   })), /*#__PURE__*/React.createElement(Toaster, null), /*#__PURE__*/React.createElement("div", {
     className: "pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[135px] -translate-x-1/2 rounded-full bg-foreground/30"
-  })), booting && /*#__PURE__*/React.createElement(Splash, {
-    onDone: bootDone,
-    showCredit: t.volkCredit
-  }))), /*#__PURE__*/React.createElement(TweaksPanel, null, /*#__PURE__*/React.createElement(TweakSection, {
+  })))), /*#__PURE__*/React.createElement(TweaksPanel, null, /*#__PURE__*/React.createElement(TweakSection, {
     label: "Brand"
   }), /*#__PURE__*/React.createElement(TweakToggle, {
     label: "Volk credit (splash)",

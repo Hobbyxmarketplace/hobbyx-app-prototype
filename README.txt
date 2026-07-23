@@ -1,7 +1,6 @@
-
 HobbyX — Production Static Build
 ================================
-Built: 2026-06-21 (fresh rebuild — regenerated from source, no build reused)
+Built: 2026-07-23 (fresh rebuild — regenerated from source, no build reused)
 Source: HobbyX App.html (faithful 1:1 — same screens & controls, no live compiler)
 
 HOW TO USE
@@ -20,4 +19,7 @@ NOTES
 - Third-party card photos (Pokemon / Yu-Gi-Oh! CDNs) load from their original
   URLs and need internet -- they cannot be bundled. Everything else works offline.
 - Cards without a photo show a clean "no image yet" placeholder.
+- This build includes: date-range estimates, updated Splash screen, "Picked Up"
+  timeline step, Invoices row with bottom-sheet + biometric/password gate,
+  Biometrics-for-Invoices account toggle.
 - This is the LATEST build. Ignore older folders.
