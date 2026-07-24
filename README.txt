@@ -1,25 +1,25 @@
-HobbyX — Production Static Build
-================================
-Built: 2026-07-23 (fresh rebuild — regenerated from source, no build reused)
-Source: HobbyX App.html (faithful 1:1 — same screens & controls, no live compiler)
+HobbyX — Grading App · Static Production Build
+Build date: 2026-07-24
 
-HOW TO USE
-----------
-Open  index.html  in Chrome (double-click, or host the whole folder).
+HOW TO RUN
+  Open index.html in Chrome (double-click), or host the folder on any static
+  web server. No build step, no bundler, no internet required except:
+    • Google Fonts (Nunito) — loaded from fonts.googleapis.com
+    • Some trading-card thumbnail art — loaded from third-party CDNs
+      (images.pokemontcg.io, images.ygoprodeck.com). These cannot be bundled
+      (CORS). When offline or blocked, cards fall back to a bundled placeholder.
 
-WHAT'S INSIDE
--------------
-index.html    -> entry point (open this)
-styles.css    -> all styles (Tailwind compiled static + reveal + app styles)
-script.js     -> the whole app, precompiled (no Babel/CDN at runtime)
-assets/       -> logos, card slabs, packet art, placeholder, React
+STRUCTURE
+  index.html          entry point
+  styles.css          precompiled stylesheet (Tailwind utilities + app + reveal + tokens)
+  script.js           precompiled application (React, no JSX/Babel at runtime)
+  assets/             images, fonts helpers, vendored React (production builds)
 
 NOTES
------
-- Third-party card photos (Pokemon / Yu-Gi-Oh! CDNs) load from their original
-  URLs and need internet -- they cannot be bundled. Everything else works offline.
-- Cards without a photo show a clean "no image yet" placeholder.
-- This build includes: date-range estimates, updated Splash screen, "Picked Up"
-  timeline step, Invoices row with bottom-sheet + biometric/password gate,
-  Biometrics-for-Invoices account toggle.
-- This is the LATEST build. Ignore older folders.
+  • Faithful 1:1 export of the live design, including the Auth / Grading review
+    switcher, Light/Dark toggle, Online/Offline control, and the phone bezel.
+  • No CDN/Babel at runtime — JSX is precompiled and React is vendored locally.
+  • Custom features preserved: date-range estimates (incl. cross-year ranges),
+    invoice numbers (H######) behind a biometric gate with a persistent
+    Face/Touch-ID error, and the Completed-tab status filter
+    (Ready for Pickup / Picked Up).
