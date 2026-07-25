@@ -436,7 +436,7 @@ const ORDERS = [{
     cert: '159795050',
     name: '2025 Weiss Schwarz Hatsune Miku SP Signed',
     category: 'Weiss Schwarz',
-    img: 'assets/card-no-image.png'
+    img: 'assets/card-placeholder.png'
   }]
 }, {
   id: 'o4',
@@ -939,7 +939,7 @@ const ZH = {
   'Estimated Completion Date': '預計完成日期',
   'Completion date': '完成日期',
   'Est. completion': '預計完成',
-  'Estimated completion': '預計完成',
+  'Est. Completion': '預計完成',
   'graded': '已評級',
   'Grading progress': '評級進度',
   'Estimated\nCompletion Date': '預計\n完成日期',
@@ -2189,7 +2189,7 @@ function CardImage({
     id: slotId(cert),
     shape: "rect",
     radius: 0,
-    src: "assets/card-no-image.png",
+    src: "assets/card-placeholder.png",
     placeholder: (category || 'Card') + ' image',
     style: {
       display: 'block',
@@ -2390,7 +2390,7 @@ function Slab({
     id: slotId(item.cert),
     shape: "rect",
     radius: 0,
-    src: "assets/card-no-image.png",
+    src: "assets/card-placeholder.png",
     placeholder: (item.category || 'Card') + ' image',
     style: {
       display: 'block',
@@ -3064,7 +3064,7 @@ function ListScreen({
       value: pct
     })), /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5 text-[13px] font-medium leading-snug text-muted-foreground"
-    }, tx('Estimated completion'), ": ", /*#__PURE__*/React.createElement("span", {
+    }, tx('Est. Completion'), ": ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-foreground"
     }, o.est))), o.group === 'completed' && /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5"
