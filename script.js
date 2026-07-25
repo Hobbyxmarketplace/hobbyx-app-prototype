@@ -38,6 +38,10 @@ const PIPELINE = [{
   key: 'complete',
   label: 'Ready for Pickup',
   desc: 'Your order is ready for pickup at Mongkok Store.'
+}, {
+  key: 'pickedUp',
+  label: 'Picked Up',
+  desc: 'Your order has been picked up. Thanks for grading with HobbyX!'
 }];
 const STEP_INDEX = Object.fromEntries(PIPELINE.map((s, i) => [s.key, i]));
 function isOrderPreDetail(order) {
@@ -468,7 +472,7 @@ const ORDERS = [{
   itemCount: 3,
   est: 'May 22, 2026',
   estDays: '5 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-17',
   completedOn: 'May 15, 2026',
@@ -482,7 +486,8 @@ const ORDERS = [{
     qa: 'May 09, 2026',
     ready: 'May 11, 2026',
     completing: 'May 13, 2026',
-    complete: 'May 15, 2026'
+    complete: 'May 15, 2026',
+    pickedUp: 'May 18, 2026'
   },
   items: [{
     cert: '46721747',
@@ -585,7 +590,7 @@ const ORDERS = [{
   itemCount: 2,
   est: 'May 04, 2026',
   estDays: '10 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-05',
   completedOn: 'Apr 28, 2026',
@@ -599,7 +604,8 @@ const ORDERS = [{
     qa: 'Apr 24, 2026',
     ready: 'Apr 25, 2026',
     completing: 'Apr 27, 2026',
-    complete: 'Apr 28, 2026'
+    complete: 'Apr 28, 2026',
+    pickedUp: 'May 01, 2026'
   },
   items: [{
     cert: '59017657',
@@ -669,6 +675,13 @@ const STATUS_FILTERS = [{
   key: 'all',
   label: 'All Statuses'
 }, ...['arrived', 'research', 'grading', 'assembly', 'ready', 'completing'].map(k => ({
+  key: k,
+  label: PIPELINE[STEP_INDEX[k]].label
+}))];
+const COMPLETED_STATUS_FILTERS = [{
+  key: 'all',
+  label: 'All Statuses'
+}, ...['complete', 'pickedUp'].map(k => ({
   key: k,
   label: PIPELINE[STEP_INDEX[k]].label
 }))];
@@ -751,6 +764,7 @@ Object.assign(window, {
   TABS,
   SORTS,
   STATUS_FILTERS,
+  COMPLETED_STATUS_FILTERS,
   NOTIFICATIONS,
   ACCOUNT,
   PAYOUT_METHODS,
@@ -910,6 +924,8 @@ const ZH = {
   'Your grades are ready to be revealed.': '你的評級結果已可揭曉。',
   'Your order is ready for Grade Reveal.': '你的訂單已可進行評級揭曉。',
   'Your order is ready for pickup at Mongkok Store.': '你的訂單已可在旺角店取貨。',
+  'Picked Up': '已取貨',
+  'Your order has been picked up. Thanks for grading with HobbyX!': '你的訂單已取貨。感謝你選擇 HobbyX 評級！',
   'Ready for Pickup at Mongkok Store': '可到旺角店取貨',
   'No orders ready for pickup yet': '目前沒有可供取回的訂單',
   'Graded cards ready for collection will appear here.': '已評級並可供領取的卡牌會在此顯示。',
@@ -1354,7 +1370,7 @@ function setLang(l) {
 }
 /* Traditional → Simplified character map — covers every Chinese character used in ZH.
    Characters identical in both scripts are omitted (left unchanged). */
-const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed\u6383\u626b\u9589\u95ed';
+const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed\u6383\u626b\u9589\u95ed\u8b1d\u8c22';
 const T2S = {};
 for (let i = 0; i < T2S_PAIRS.length; i += 2) {
   T2S[T2S_PAIRS[i]] = T2S_PAIRS[i + 1];
@@ -2499,7 +2515,7 @@ function Stepper({
   order
 }) {
   const current = STEP_INDEX[order.status];
-  const isComplete = order.status === 'complete';
+  const isComplete = current === PIPELINE.length - 1;
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-1"
   }, PIPELINE.map((s, i) => {
@@ -2821,16 +2837,17 @@ const TABS_WITH_COUNTS = TABS.map(t => ({
 function Menu({
   items,
   current,
-  onPick
+  onPick,
+  align
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-x-0 z-30 mt-2 rounded-md border border-border bg-popover p-1 shadow-lg"
+    className: 'absolute z-30 mt-2 w-max min-w-full rounded-md border border-border bg-popover p-1 shadow-lg ' + (align === 'right' ? 'right-0' : 'left-0')
   }, items.map(it => /*#__PURE__*/React.createElement("button", {
     key: it.key,
     onClick: () => onPick(it.key),
-    className: "flex w-full items-center justify-between rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
+    className: "flex w-full items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
   }, tx(it.label), current === it.key && /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4 text-primary"
+    className: "h-4 w-4 shrink-0 text-primary"
   }, Icon.check))));
 }
 function FilterBtn({
@@ -2904,7 +2921,7 @@ function ListScreen({
   const base = empty ? [] : gradingOnly ? tab === 'completed' ? ORDERS.filter(o => o.group === 'completed') : [] : ORDERS.filter(o => tab === 'completed' ? o.group === 'completed' : o.group === 'progress');
   let rows = base;
   if (q.trim()) rows = rows.filter(o => (o.service + ' ' + (o.shipment || '')).toLowerCase().includes(q.toLowerCase()));
-  if (tab === 'progress' && statusF !== 'all') rows = rows.filter(o => o.status === statusF);
+  if (statusF !== 'all') rows = rows.filter(o => o.status === statusF);
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
   const filtered = q.trim() || statusF !== 'all';
   return /*#__PURE__*/React.createElement("div", {
@@ -2972,7 +2989,7 @@ function ListScreen({
       setSort(k);
       setMenu(null);
     }
-  })), tab === 'progress' && /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     className: "relative flex-1"
   }, /*#__PURE__*/React.createElement(FilterBtn, {
     icon: Icon.sliders,
@@ -2982,7 +2999,8 @@ function ListScreen({
     open: menu === 'status',
     onClick: () => setMenu(menu === 'status' ? null : 'status')
   }), menu === 'status' && /*#__PURE__*/React.createElement(Menu, {
-    items: STATUS_FILTERS,
+    items: tab === 'completed' ? COMPLETED_STATUS_FILTERS : STATUS_FILTERS,
+    align: "right",
     current: statusF,
     onPick: k => {
       setStatusF(k);
