@@ -38,6 +38,10 @@ const PIPELINE = [{
   key: 'complete',
   label: 'Ready for Pickup',
   desc: 'Your order is ready for pickup at Mongkok Store.'
+}, {
+  key: 'pickedUp',
+  label: 'Picked Up',
+  desc: 'Your order has been picked up. Thanks for grading with HobbyX!'
 }];
 const STEP_INDEX = Object.fromEntries(PIPELINE.map((s, i) => [s.key, i]));
 function isOrderPreDetail(order) {
@@ -68,6 +72,38 @@ function statusIntent(key) {
 
 // Fixed "today" so behind/on-schedule logic is deterministic in the prototype.
 const TODAY = new Date('2026-06-06T00:00:00');
+
+// Estimated completion is shown as a date RANGE (not a single exact date) —
+// friendlier UX since grading turnaround is inherently an estimate.
+// estDate stays the authoritative single date used for behind/on-schedule math;
+// `est` becomes a human range string ending on that date.
+function fmtShort(d) {
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function estRange(iso, estDaysStr) {
+  const end = new Date(iso + 'T00:00:00');
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  const start = new Date(end);
+  start.setDate(start.getDate() - span);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  if (sameMonth) return `${start.toLocaleDateString('en-US', {
+    month: 'short'
+  })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`;
+  if (sameYear) return `${fmtShort(start)} – ${fmtShort(end)}, ${end.getFullYear()}`;
+  return `${fmtShort(start)}, ${start.getFullYear()} – ${fmtShort(end)}, ${end.getFullYear()}`;
+}
+// Business Turnaround Days is shown as a range too, using the same span as
+// the completion date range so the two stay consistent with each other.
+function turnaroundRange(estDaysStr) {
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  return `${days - span}-${days} Business Days`;
+}
 const ORDERS = [{
   id: 'o1',
   name: 'Autograph Series — Mackenyu',
@@ -76,7 +112,8 @@ const ORDERS = [{
   shipment: 'May 15 · 1st Shipment',
   num: '26793937',
   itemCount: 1,
-  est: 'Sep 25, 2026',
+  estDate: '2026-09-25',
+  est: estRange('2026-09-25', '90 Business Days'),
   estDays: '90 Business Days',
   status: 'research',
   group: 'progress',
@@ -98,7 +135,8 @@ const ORDERS = [{
   shipment: 'Apr 12 · 1st Shipment',
   num: '26770330',
   itemCount: 44,
-  est: 'Jul 23, 2026',
+  estDate: '2026-07-23',
+  est: estRange('2026-07-23', '40 Business Days'),
   estDays: '40 Business Days',
   status: 'ready',
   group: 'progress',
@@ -177,7 +215,8 @@ const ORDERS = [{
   shipment: 'Apr 30 · 2nd Shipment',
   num: '26717114',
   itemCount: 103,
-  est: 'Jun 8, 2026',
+  estDate: '2026-06-08',
+  est: estRange('2026-06-08', '25 Business Days'),
   estDays: '25 Business Days',
   status: 'grading',
   group: 'progress',
@@ -231,7 +270,8 @@ const ORDERS = [{
   shipment: 'May 20 · 2nd Shipment',
   num: '26781450',
   itemCount: 26,
-  est: 'Jul 2, 2026',
+  estDate: '2026-07-02',
+  est: estRange('2026-07-02', '45 Business Days'),
   estDays: '45 Business Days',
   status: 'research',
   group: 'progress',
@@ -265,7 +305,8 @@ const ORDERS = [{
   shipment: 'May 08 · 1st Shipment',
   num: '26788120',
   itemCount: 60,
-  est: 'Jun 18, 2026',
+  estDate: '2026-06-18',
+  est: estRange('2026-06-18', '20 Business Days'),
   estDays: '20 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -302,7 +343,8 @@ const ORDERS = [{
   shipment: 'May 02 · 1st Shipment',
   num: '26780114',
   itemCount: 8,
-  est: 'Jun 11, 2026',
+  estDate: '2026-06-11',
+  est: estRange('2026-06-11', '30 Business Days'),
   estDays: '30 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -327,7 +369,8 @@ const ORDERS = [{
   shipment: 'Apr 25 · 1st Shipment',
   num: '26795500',
   itemCount: 5,
-  est: 'Jun 2, 2026',
+  estDate: '2026-06-02',
+  est: estRange('2026-06-02', '15 Business Days'),
   estDays: '15 Business Days',
   status: 'completing',
   group: 'progress',
@@ -379,7 +422,8 @@ const ORDERS = [{
   shipment: 'May 22 · 2nd Shipment',
   num: '26799010',
   itemCount: 3,
-  est: 'Aug 1, 2026',
+  estDate: '2027-01-03',
+  est: estRange('2027-01-03', '60 Business Days'),
   estDays: '60 Business Days',
   status: 'research',
   group: 'progress',
@@ -392,7 +436,7 @@ const ORDERS = [{
     cert: '159795050',
     name: '2025 Weiss Schwarz Hatsune Miku SP Signed',
     category: 'Weiss Schwarz',
-    img: 'assets/card-no-image.png'
+    img: 'assets/card-placeholder.png'
   }]
 }, {
   id: 'o4',
@@ -402,7 +446,8 @@ const ORDERS = [{
   shipment: 'May 26 · 2nd Shipment',
   num: '26801337',
   itemCount: 12,
-  est: 'Nov 13, 2026',
+  estDate: '2027-01-05',
+  est: estRange('2027-01-05', '120 Business Days'),
   estDays: '120 Business Days',
   status: 'arrived',
   group: 'progress',
@@ -427,7 +472,7 @@ const ORDERS = [{
   itemCount: 3,
   est: 'May 22, 2026',
   estDays: '5 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-17',
   completedOn: 'May 15, 2026',
@@ -441,7 +486,8 @@ const ORDERS = [{
     qa: 'May 09, 2026',
     ready: 'May 11, 2026',
     completing: 'May 13, 2026',
-    complete: 'May 15, 2026'
+    complete: 'May 15, 2026',
+    pickedUp: 'May 18, 2026'
   },
   items: [{
     cert: '46721747',
@@ -544,7 +590,7 @@ const ORDERS = [{
   itemCount: 2,
   est: 'May 04, 2026',
   estDays: '10 Business Days',
-  status: 'complete',
+  status: 'pickedUp',
   group: 'completed',
   arrived: '2026-04-05',
   completedOn: 'Apr 28, 2026',
@@ -558,7 +604,8 @@ const ORDERS = [{
     qa: 'Apr 24, 2026',
     ready: 'Apr 25, 2026',
     completing: 'Apr 27, 2026',
-    complete: 'Apr 28, 2026'
+    complete: 'Apr 28, 2026',
+    pickedUp: 'May 01, 2026'
   },
   items: [{
     cert: '59017657',
@@ -631,6 +678,13 @@ const STATUS_FILTERS = [{
   key: k,
   label: PIPELINE[STEP_INDEX[k]].label
 }))];
+const COMPLETED_STATUS_FILTERS = [{
+  key: 'all',
+  label: 'All Statuses'
+}, ...['complete', 'pickedUp'].map(k => ({
+  key: k,
+  label: PIPELINE[STEP_INDEX[k]].label
+}))];
 const NOTIFICATIONS = [{
   id: 'n1',
   icon: 'sparkles',
@@ -684,7 +738,7 @@ const ACCOUNT = {
     items: [['Account Info', 'user']]
   }, {
     group: 'Preferences',
-    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell']]
+    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell'], ['Biometrics for Invoices', 'fingerprint']]
   }, {
     group: 'Support',
     items: [['Help Centre', 'help'], ['Terms & Policies', 'doc'], ['Contact Us', 'mail'], ['Sign Out', 'signout']]
@@ -710,6 +764,7 @@ Object.assign(window, {
   TABS,
   SORTS,
   STATUS_FILTERS,
+  COMPLETED_STATUS_FILTERS,
   NOTIFICATIONS,
   ACCOUNT,
   PAYOUT_METHODS,
@@ -869,6 +924,8 @@ const ZH = {
   'Your grades are ready to be revealed.': '你的評級結果已可揭曉。',
   'Your order is ready for Grade Reveal.': '你的訂單已可進行評級揭曉。',
   'Your order is ready for pickup at Mongkok Store.': '你的訂單已可在旺角店取貨。',
+  'Picked Up': '已取貨',
+  'Your order has been picked up. Thanks for grading with HobbyX!': '你的訂單已取貨。感謝你選擇 HobbyX 評級！',
   'Ready for Pickup at Mongkok Store': '可到旺角店取貨',
   'No orders ready for pickup yet': '目前沒有可供取回的訂單',
   'Graded cards ready for collection will appear here.': '已評級並可供領取的卡牌會在此顯示。',
@@ -882,7 +939,7 @@ const ZH = {
   'Estimated Completion Date': '預計完成日期',
   'Completion date': '完成日期',
   'Est. completion': '預計完成',
-  'Estimated completion': '預計完成',
+  'Est. Completion': '預計完成',
   'graded': '已評級',
   'Grading progress': '評級進度',
   'Estimated\nCompletion Date': '預計\n完成日期',
@@ -1070,6 +1127,18 @@ const ZH = {
   // —— login errors ——
   'We couldn’t find an account with that email address.': '找不到使用此電郵地址的帳戶。',
   'Incorrect password. Please try again.': '密碼不正確。請再試一次。',
+  // —— invoices: auth gate + biometrics ——
+  'Invoices': '發票',
+  'Biometrics for Invoices': '發票生物認證',
+  'Enter your account password to continue.': '請輸入你的帳戶密碼以繼續。',
+  'Use Face/Touch ID': '使用 Face/Touch ID',
+  'Face/Touch ID didn’t match. Try again.': 'Face/Touch ID 不符，請再試一次。',
+  'Incorrect password. Try again.': '密碼不正確，請再試一次。',
+  'Scanning your face…': '正在掃描你的面容⋯',
+  'Face recognized': '面容已辨識',
+  'Face not recognized': '無法辨識面容',
+  'Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.': '發票已啟用生物認證。你可隨時於「帳戶 → 發票生物認證」關閉。',
+  'Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用 Face/Touch ID，即可免除輸入密碼。',
   // —— added: full country list + remaining UI strings ——
   'Macau': '澳門',
   'Afghanistan': '阿富汗',
@@ -1301,7 +1370,7 @@ function setLang(l) {
 }
 /* Traditional → Simplified character map — covers every Chinese character used in ZH.
    Characters identical in both scripts are omitted (left unchanged). */
-const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed';
+const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed\u6383\u626b\u9589\u95ed\u8b1d\u8c22';
 const T2S = {};
 for (let i = 0; i < T2S_PAIRS.length; i += 2) {
   T2S[T2S_PAIRS[i]] = T2S_PAIRS[i + 1];
@@ -1336,33 +1405,18 @@ function LangToggle({
   className = ''
 }) {
   const [lang, set] = useLang();
-  const val = normLang(lang);
-  return /*#__PURE__*/React.createElement("div", {
-    className: 'inline-flex items-center ' + className
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: val,
-    onChange: e => set(e.target.value),
-    "aria-label": "Language",
-    style: {
-      minWidth: '7rem'
-    },
-    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
-  }, LANGS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: k
-  }, l))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 24 24",
-    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
+  return /*#__PURE__*/React.createElement(SelectMenu, {
+    className: className,
+    value: normLang(lang),
+    // language names stay in their own script — never translated
+    translate: false,
+    options: LANGS.map(([k, l]) => ({
+      key: k,
+      label: l
+    })),
+    onPick: set,
+    ariaLabel: "Language"
+  });
 }
 const APPEARANCE_PREFS = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
 function AppearanceSelect({
@@ -1370,32 +1424,16 @@ function AppearanceSelect({
   onChange,
   className = ''
 }) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: 'inline-flex items-center ' + className
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center"
-  }, /*#__PURE__*/React.createElement("select", {
+  return /*#__PURE__*/React.createElement(SelectMenu, {
+    className: className,
     value: value,
-    onChange: e => onChange(e.target.value),
-    "aria-label": tx('Appearance'),
-    style: {
-      minWidth: '6.5rem'
-    },
-    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
-  }, APPEARANCE_PREFS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: k
-  }, tx(l)))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 24 24",
-    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
+    options: APPEARANCE_PREFS.map(([k, l]) => ({
+      key: k,
+      label: l
+    })),
+    onPick: onChange,
+    ariaLabel: tx('Appearance')
+  });
 }
 Object.assign(window, {
   tx,
@@ -1528,6 +1566,44 @@ const Icon = {
     rx: "2"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M7 11V7a5 5 0 0 1 10 0v4"
+  })),
+  fingerprint: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 0-8 8c0 4 1.5 6 2 7"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 1 8 8c0 5-1 7-1 8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 20c-1-2-2-4-2-8a6 6 0 0 1 12 0c0 1.5-.3 2.8-.7 4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 0-4 4c0 3 1 4.5 1.5 6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 1 4 4c0 2-.3 3.5-1 5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 12v2c0 1.5.3 3 1 4.5"
+  })),
+  faceScan: /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 64 64",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M6 18V10a4 4 0 0 1 4-4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M46 6h8a4 4 0 0 1 4 4v8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 46v8a4 4 0 0 0 4 4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M58 46v8a4 4 0 0 1-4 4h-8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M22 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M42 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M32 28v8c0 1.5-1 2-2 2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M23 42c2.2 2 4.8 3 9 3s6.8-1 9-3"
   })),
   more: /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 24 24",
@@ -2082,7 +2158,7 @@ function CardImage({
     id: slotId(cert),
     shape: "rect",
     radius: 0,
-    src: "assets/card-no-image.png",
+    src: "assets/card-placeholder.png",
     placeholder: (category || 'Card') + ' image',
     style: {
       display: 'block',
@@ -2283,7 +2359,7 @@ function Slab({
     id: slotId(item.cert),
     shape: "rect",
     radius: 0,
-    src: "assets/card-no-image.png",
+    src: "assets/card-placeholder.png",
     placeholder: (item.category || 'Card') + ' image',
     style: {
       display: 'block',
@@ -2408,7 +2484,7 @@ function Stepper({
   order
 }) {
   const current = STEP_INDEX[order.status];
-  const isComplete = order.status === 'complete';
+  const isComplete = current === PIPELINE.length - 1;
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-1"
   }, PIPELINE.map((s, i) => {
@@ -2730,16 +2806,18 @@ const TABS_WITH_COUNTS = TABS.map(t => ({
 function Menu({
   items,
   current,
-  onPick
+  onPick,
+  align,
+  translate = true
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "absolute z-30 mt-2 w-56 rounded-md border border-border bg-popover p-1 shadow-lg"
+    className: 'absolute top-full z-30 mt-2 w-max min-w-full rounded-md border border-border bg-popover p-1 shadow-lg ' + (align === 'right' ? 'right-0' : 'left-0')
   }, items.map(it => /*#__PURE__*/React.createElement("button", {
     key: it.key,
     onClick: () => onPick(it.key),
-    className: "flex w-full items-center justify-between rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
-  }, tx(it.label), current === it.key && /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4 text-primary"
+    className: "flex w-full items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
+  }, translate ? tx(it.label) : it.label, current === it.key && /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4 shrink-0 text-primary"
   }, Icon.check))));
 }
 function FilterBtn({
@@ -2747,18 +2825,73 @@ function FilterBtn({
   label,
   active,
   open,
-  onClick
+  onClick,
+  full
 }) {
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
-    className: 'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
+    className: 'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (full ? 'w-full justify-between ' : 'shrink-0 ') + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: full ? 'flex min-w-0 items-center gap-1.5' : 'flex items-center gap-1.5'
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0"
   }, icon), /*#__PURE__*/React.createElement("span", {
-    className: "max-w-[130px] truncate"
-  }, label), /*#__PURE__*/React.createElement("span", {
+    className: full ? 'truncate' : 'max-w-[130px] truncate'
+  }, label)), /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5 shrink-0 opacity-60"
   }, Icon.chevD));
+}
+
+/* Pill trigger (unchanged) with the list filters' popover in place of the
+   native <select> list, so it opens just below with the same design. */
+function SelectMenu({
+  value,
+  options,
+  onPick,
+  translate = true,
+  ariaLabel,
+  className = ''
+}) {
+  const [open, setOpen] = useStateG(false);
+  const current = options.find(o => o.key === value);
+  const label = current ? translate ? tx(current.label) : current.label : '';
+  return /*#__PURE__*/React.createElement("div", {
+    className: 'inline-flex items-center ' + className
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative inline-block",
+    onClick: e => e.stopPropagation()
+  }, open && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-20",
+    onClick: () => setOpen(false)
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(v => !v),
+    "aria-label": ariaLabel,
+    style: {
+      width: '7rem'
+    },
+    className: 'relative cursor-pointer rounded-full border bg-card py-1 pl-3 pr-7 text-left text-xs font-bold text-foreground transition-colors hover:bg-accent focus:outline-none ' + (open ? 'border-ring' : 'border-border')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "block truncate"
+  }, label), /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    className: "pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "m6 9 6 6 6-6"
+  }))), open && /*#__PURE__*/React.createElement(Menu, {
+    items: options,
+    current: value,
+    align: "right",
+    translate: translate,
+    onPick: k => {
+      onPick(k);
+      setOpen(false);
+    }
+  })));
 }
 
 /* ---------- LIST ---------- */
@@ -2810,16 +2943,9 @@ function ListScreen({
   const base = empty ? [] : gradingOnly ? tab === 'completed' ? ORDERS.filter(o => o.group === 'completed') : [] : ORDERS.filter(o => tab === 'completed' ? o.group === 'completed' : o.group === 'progress');
   let rows = base;
   if (q.trim()) rows = rows.filter(o => (o.service + ' ' + (o.shipment || '')).toLowerCase().includes(q.toLowerCase()));
-  if (tab === 'progress' && statusF !== 'all') rows = rows.filter(o => o.status === statusF);
+  if (statusF !== 'all') rows = rows.filter(o => o.status === statusF);
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
   const filtered = q.trim() || statusF !== 'all';
-  const clearFilters = () => {
-    setQ('');
-    setSort('newest');
-    setStatusF('all');
-    setMenu(null);
-  };
-  const showClear = !!q.trim() || sort !== 'newest' || tab === 'progress' && statusF !== 'all';
   return /*#__PURE__*/React.createElement("div", {
     className: "flex h-full flex-col bg-background",
     onClick: () => {
@@ -2848,6 +2974,7 @@ function ListScreen({
     value: tab,
     onChange: t => {
       setTab(t);
+      setStatusF('all');
       setMenu(null);
     },
     tabs: gradingOnly ? TABS.map(t => ({
@@ -2869,9 +2996,10 @@ function ListScreen({
     className: "relative mt-2.5 flex gap-2",
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("div", {
-    className: "relative"
+    className: "relative flex-1"
   }, /*#__PURE__*/React.createElement(FilterBtn, {
     icon: Icon.sort,
+    full: true,
     label: tx(SORTS.find(s => s.key === sort).short),
     active: sort !== 'newest',
     open: menu === 'sort',
@@ -2883,29 +3011,24 @@ function ListScreen({
       setSort(k);
       setMenu(null);
     }
-  })), tab === 'progress' && /*#__PURE__*/React.createElement("div", {
-    className: "relative"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "relative flex-1"
   }, /*#__PURE__*/React.createElement(FilterBtn, {
     icon: Icon.sliders,
+    full: true,
     label: statusF === 'all' ? tx('Status') : tx(PIPELINE[STEP_INDEX[statusF]].label),
     active: statusF !== 'all',
     open: menu === 'status',
     onClick: () => setMenu(menu === 'status' ? null : 'status')
   }), menu === 'status' && /*#__PURE__*/React.createElement(Menu, {
-    items: STATUS_FILTERS,
+    items: tab === 'completed' ? COMPLETED_STATUS_FILTERS : STATUS_FILTERS,
+    align: "right",
     current: statusF,
     onPick: k => {
       setStatusF(k);
       setMenu(null);
     }
-  })), showClear && /*#__PURE__*/React.createElement("button", {
-    onClick: clearFilters,
-    title: tx('Clear all filters'),
-    "aria-label": tx('Clear all filters'),
-    className: "ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4"
-  }, Icon.close))))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 space-y-2.5 overflow-y-auto px-5 pb-8",
     ref: scrollRef,
     onScroll: onListScroll
@@ -2963,7 +3086,7 @@ function ListScreen({
       value: pct
     })), /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5 text-[13px] font-medium leading-snug text-muted-foreground"
-    }, tx('Estimated completion'), ": ", /*#__PURE__*/React.createElement("span", {
+    }, tx('Est. Completion'), ": ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-foreground"
     }, o.est))), o.group === 'completed' && /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5"
@@ -3017,6 +3140,72 @@ function DetailScreen({
   const imagesReady = order.items.some(it => it.grade || it.img || it.slab);
   const [tip, setTip] = useStateG(false);
   const [confirmSkip, setConfirmSkip] = useStateG(false);
+  // Invoices sit behind an auth gate — password, or Face/Touch ID when the
+  // "Biometrics for Invoices" preference is on (Account → Preferences).
+  const [showInvoice, setShowInvoice] = useStateG(false);
+  const [showAuthGate, setShowAuthGate] = useStateG(false);
+  const [gatePw, setGatePw] = useStateG('');
+  const [gatePwErr, setGatePwErr] = useStateG(false);
+  const [bioPhase, setBioPhase] = useStateG('idle');
+  const [bioError, setBioError] = useStateG(false);
+  const bioBusy = bioPhase !== 'idle';
+  const bioEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('hobbyx_bio_invoices') !== '0';
+  // A grading order is billed across one or more invoices; the split is derived
+  // from the order id so the prototype shows stable numbers between renders.
+  const invoiceList = React.useMemo(function () {
+    let seed = 0;
+    const s = order.id || '';
+    for (let k = 0; k < s.length; k++) seed = seed * 31 + s.charCodeAt(k) >>> 0;
+    const rand = function () {
+      seed = seed * 1103515245 + 12345 >>> 0;
+      return seed / 4294967296;
+    };
+    const total = order.itemCount || 1;
+    const n = Math.min(4, Math.max(1, total), Math.floor(rand() * 4) + 1);
+    const cuts = [];
+    let remaining = total;
+    for (let i = 0; i < n - 1; i++) {
+      const share = Math.max(1, Math.min(remaining - (n - i - 1), Math.round(remaining / (n - i) * (0.5 + rand()))));
+      cuts.push(share);
+      remaining -= share;
+    }
+    cuts.push(remaining);
+    return cuts.map(function (cards) {
+      return {
+        inv: 'H' + String(Math.floor(rand() * 900000) + 100000).padStart(6, '0'),
+        cards
+      };
+    });
+  }, [order.id, order.itemCount]);
+  const openInvoiceGate = () => {
+    setGatePw('');
+    setGatePwErr(false);
+    setBioError(false);
+    setShowAuthGate(true);
+  };
+  const submitGatePw = () => {
+    if (gatePw === 'Test@123') {
+      setShowAuthGate(false);
+      setShowInvoice(true);
+    } else setGatePwErr(true);
+  };
+  const tryBiometrics = () => {
+    setBioError(false);
+    setBioPhase('scanning');
+    setTimeout(() => {
+      const ok = Math.random() > 0.15;
+      setBioPhase(ok ? 'success' : 'failed');
+      setTimeout(() => {
+        setBioPhase('idle');
+        if (ok) {
+          setShowAuthGate(false);
+          setShowInvoice(true);
+        } else {
+          setBioError(true);
+        }
+      }, ok ? 700 : 900);
+    }, 1100);
+  };
   // View all is always available once images are ready. If grades aren't revealed
   // yet, confirm that the user wants to skip the reveal before jumping to the list.
   const handleViewAll = () => {
@@ -3032,7 +3221,10 @@ function DetailScreen({
     openItems();
   };
   const _cd = order.completedOn ? new Date(order.completedOn) : null;
-  const _ed = order.est ? new Date(order.est) : null;
+  // `est` is now a human-readable range, so the behind/ahead maths reads the
+  // authoritative single date from `estDate` (older completed orders still
+  // carry a plain single-date `est`).
+  const _ed = order.estDate ? new Date(order.estDate + 'T00:00:00') : order.est ? new Date(order.est) : null;
   const daysEarly = _cd && _ed ? Math.round((_ed - _cd) / 86400000) : 0;
   const aheadOfSchedule = completed && daysEarly > 0;
   const behind = !completed && !isOrderPreDetail(order) && _ed && _ed < TODAY;
@@ -3061,7 +3253,12 @@ function DetailScreen({
     className: "text-[26px] font-extrabold leading-tight tracking-tight text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-[15px] font-semibold text-primary"
-  }, order.shipment || tx(order.category)), imagesReady && /*#__PURE__*/React.createElement("div", {
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("button", {
+    onClick: openInvoiceGate,
+    className: "mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition active:scale-[.96] active:bg-accent"
+  }, tx('Invoices'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-muted-foreground"
+  }, "(", invoiceList.length, ")")), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-medium text-muted-foreground"
   }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
@@ -3073,7 +3270,7 @@ function DetailScreen({
     className: "flex min-h-[26px] items-start text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground"
   }, tx('Business Turnaround Days')), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-semibold text-foreground"
-  }, order.turnaround || order.estDays)), /*#__PURE__*/React.createElement("div", {
+  }, order.turnaround || turnaroundRange(order.estDays))), /*#__PURE__*/React.createElement("div", {
     className: "relative px-4 py-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-[26px] items-start pr-7 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
@@ -3162,7 +3359,90 @@ function DetailScreen({
     className: "mb-3 text-base font-bold text-foreground"
   }, tx('Status')), /*#__PURE__*/React.createElement(Stepper, {
     order: order
-  }))), confirmSkip && /*#__PURE__*/React.createElement("div", {
+  }))), showAuthGate && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => {
+      if (!bioBusy) setShowAuthGate(false);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-5 w-5"
+  }, Icon.lock)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-[13px] font-medium text-muted-foreground"
+  }, tx('Enter your account password to continue.')), bioEnabled && /*#__PURE__*/React.createElement("button", {
+    onClick: tryBiometrics,
+    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99]"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4"
+  }, Icon.fingerprint), tx('Use Face/Touch ID')), bioEnabled && bioError && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-3.5 w-3.5"
+  }, Icon.close), tx('Face/Touch ID didn’t match. Try again.')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: gatePw,
+    onChange: e => {
+      setGatePw(e.target.value);
+      setGatePwErr(false);
+    },
+    placeholder: tx('Password'),
+    className: 'h-11 w-full rounded-md border bg-background px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none ' + (gatePwErr ? 'border-red-400' : 'border-input')
+  }), gatePwErr && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1.5 text-xs font-semibold text-red-500"
+  }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement("button", {
+    onClick: submitGatePw,
+    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent"
+  }, tx('Continue')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, bioEnabled ? tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.') : tx('Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.')))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm",
+    style: {
+      animation: 'faceScanFade .25s ease'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center",
+    style: {
+      animation: 'faceScanPop .3s cubic-bezier(.34,1.56,.64,1)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: 'relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 ' + (bioPhase === 'success' ? 'border-success text-success' : bioPhase === 'failed' ? 'border-red-400 text-red-400' : 'border-white/70 text-white')
+  }, bioPhase === 'scanning' && /*#__PURE__*/React.createElement("span", {
+    className: "absolute inset-0 rounded-2xl border-2 border-white/40",
+    style: {
+      animation: 'faceScanPulse 1.4s ease-out infinite'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, bioPhase === 'success' ? Icon.check : bioPhase === 'failed' ? Icon.close : Icon.faceScan)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-sm font-semibold text-white"
+  }, bioPhase === 'scanning' ? tx('Scanning your face…') : bioPhase === 'success' ? tx('Face recognized') : tx('Face not recognized')))), showInvoice && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setShowInvoice(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-extrabold leading-tight text-foreground"
+  }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 text-sm font-semibold text-primary"
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-[13px] font-semibold text-muted-foreground"
+  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 divide-y divide-border"
+  }, invoiceList.map(iv => /*#__PURE__*/React.createElement("div", {
+    key: iv.inv,
+    className: "flex items-center justify-between gap-3 py-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[15px] font-semibold text-foreground"
+  }, iv.inv), /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSkip(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4039,6 +4319,21 @@ function AccountScreen({
   onDeletionScheduled
 }) {
   const [notif, setNotif] = useStateG(true);
+  // Persisted so the invoice auth gate in DetailScreen can read the preference
+  // without threading it through the router.
+  const [bioInvoices, setBioInvoices] = useStateG(() => {
+    try {
+      return localStorage.getItem('hobbyx_bio_invoices') !== '0';
+    } catch (e) {
+      return true;
+    }
+  });
+  const toggleBio = v => {
+    setBioInvoices(v);
+    try {
+      localStorage.setItem('hobbyx_bio_invoices', v ? '1' : '0');
+    } catch (e) {}
+  };
   const [showPolicies, setShowPolicies] = useStateG(false);
   const [confirmSignOut, setConfirmSignOut] = useStateG(false);
   const [pendingExt, setPendingExt] = useStateG(null);
@@ -4107,14 +4402,15 @@ function AccountScreen({
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"
   }, tx(grp.group)), /*#__PURE__*/React.createElement("div", {
-    className: "overflow-hidden rounded-lg border border-border bg-card"
+    className: "rounded-lg border border-border bg-card"
   }, grp.items.map(([label, ic], ii) => {
     const isDelete = label === 'Delete Account';
     const danger = label === 'Sign Out';
     const isAppearance = label === 'Appearance';
     const isLanguage = label === 'Language';
     const isNotifications = label === 'Notifications';
-    const isControl = isAppearance || isLanguage || isNotifications;
+    const isBio = label === 'Biometrics for Invoices';
+    const isControl = isAppearance || isLanguage || isNotifications || isBio;
     const isHelp = label === 'Help Centre';
     const isPolicies = label === 'Terms & Policies';
     const isContact = label === 'Contact Us';
@@ -4129,10 +4425,13 @@ function AccountScreen({
     }) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
       checked: notif,
       onChange: setNotif
+    }) : isBio ? /*#__PURE__*/React.createElement(Switch, {
+      checked: bioInvoices,
+      onChange: toggleBio
     }) : !danger && !isDelete && /*#__PURE__*/React.createElement("span", {
       className: 'h-4 w-4 text-muted-foreground transition-transform ' + (isPolicies && showPolicies ? 'rotate-90' : '')
-    }, isHelp ? Icon.external : Icon.chevR));
-    const rowCls = 'flex w-full items-center justify-between px-4 py-3.5 ' + (ii > 0 ? 'border-t border-border' : '');
+    }, isHelp || isContact ? Icon.external : Icon.chevR));
+    const rowCls = 'flex w-full items-center justify-between px-4 py-3.5 ' + (ii > 0 ? 'border-t border-border ' : '') + (ii === 0 ? 'rounded-t-lg ' : '') + (ii === grp.items.length - 1 ? 'rounded-b-lg' : '');
     if (isControl) return /*#__PURE__*/React.createElement("div", {
       key: ii,
       className: rowCls
@@ -4502,36 +4801,31 @@ function SkeletonScreen({
     }, /*#__PURE__*/React.createElement("span", {
       className: "h-5 w-5"
     }, Icon.bell)), /*#__PURE__*/React.createElement(SkBlock, {
-      c: "h-10 w-10 rounded-full"
-    }))), /*#__PURE__*/React.createElement(Tabs, {
-      value: "progress",
-      onChange: () => {},
-      tabs: TABS_WITH_COUNTS
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "px-5 pb-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "relative flex items-center"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground"
-    }, Icon.search), /*#__PURE__*/React.createElement("input", {
-      disabled: true,
-      placeholder: tx('Search by service name'),
-      className: "h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground"
+      c: "h-9 w-9 rounded-full"
+    }))),
+    // The tabs, search field and filters arrive with the data, so they load as
+    // skeletons too. Each block keeps the exact footprint of the control it
+    // stands in for — h-10 tabs track, h-10 search, h-9 filters in two equal
+    // columns — so nothing shifts when the real row replaces it.
+    /*#__PURE__*/React.createElement("div", {
+      className: "mx-5 mb-3"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-10 w-full rounded-lg"
     })), /*#__PURE__*/React.createElement("div", {
+      className: "px-5 pb-3"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-10 w-full rounded-md"
+    }), /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5 flex gap-2"
-    }, /*#__PURE__*/React.createElement(FilterBtn, {
-      icon: Icon.sort,
-      label: tx(SORTS.find(s => s.key === 'newest').short),
-      active: false,
-      open: false,
-      onClick: () => {}
-    }), /*#__PURE__*/React.createElement(FilterBtn, {
-      icon: Icon.sliders,
-      label: tx('Status'),
-      active: false,
-      open: false,
-      onClick: () => {}
-    }))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-9 w-full rounded-md"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-9 w-full rounded-md"
+    })))), /*#__PURE__*/React.createElement("div", {
       className: "no-scrollbar flex-1 space-y-2.5 overflow-y-auto px-5 pb-8"
     }, /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null)));
   }
