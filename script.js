@@ -2824,7 +2824,7 @@ function Menu({
   onPick
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "absolute z-30 mt-2 w-56 rounded-md border border-border bg-popover p-1 shadow-lg"
+    className: "absolute inset-x-0 z-30 mt-2 rounded-md border border-border bg-popover p-1 shadow-lg"
   }, items.map(it => /*#__PURE__*/React.createElement("button", {
     key: it.key,
     onClick: () => onPick(it.key),
@@ -2838,16 +2838,19 @@ function FilterBtn({
   label,
   active,
   open,
-  onClick
+  onClick,
+  full
 }) {
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
-    className: 'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
+    className: 'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (full ? 'w-full justify-between ' : 'shrink-0 ') + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: full ? 'flex min-w-0 items-center gap-1.5' : 'flex items-center gap-1.5'
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0"
   }, icon), /*#__PURE__*/React.createElement("span", {
-    className: "max-w-[130px] truncate"
-  }, label), /*#__PURE__*/React.createElement("span", {
+    className: full ? 'truncate' : 'max-w-[130px] truncate'
+  }, label)), /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5 shrink-0 opacity-60"
   }, Icon.chevD));
 }
@@ -2904,13 +2907,6 @@ function ListScreen({
   if (tab === 'progress' && statusF !== 'all') rows = rows.filter(o => o.status === statusF);
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
   const filtered = q.trim() || statusF !== 'all';
-  const clearFilters = () => {
-    setQ('');
-    setSort('newest');
-    setStatusF('all');
-    setMenu(null);
-  };
-  const showClear = !!q.trim() || sort !== 'newest' || tab === 'progress' && statusF !== 'all';
   return /*#__PURE__*/React.createElement("div", {
     className: "flex h-full flex-col bg-background",
     onClick: () => {
@@ -2939,6 +2935,7 @@ function ListScreen({
     value: tab,
     onChange: t => {
       setTab(t);
+      setStatusF('all');
       setMenu(null);
     },
     tabs: gradingOnly ? TABS.map(t => ({
@@ -2960,9 +2957,10 @@ function ListScreen({
     className: "relative mt-2.5 flex gap-2",
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("div", {
-    className: "relative"
+    className: "relative flex-1"
   }, /*#__PURE__*/React.createElement(FilterBtn, {
     icon: Icon.sort,
+    full: true,
     label: tx(SORTS.find(s => s.key === sort).short),
     active: sort !== 'newest',
     open: menu === 'sort',
@@ -2975,9 +2973,10 @@ function ListScreen({
       setMenu(null);
     }
   })), tab === 'progress' && /*#__PURE__*/React.createElement("div", {
-    className: "relative"
+    className: "relative flex-1"
   }, /*#__PURE__*/React.createElement(FilterBtn, {
     icon: Icon.sliders,
+    full: true,
     label: statusF === 'all' ? tx('Status') : tx(PIPELINE[STEP_INDEX[statusF]].label),
     active: statusF !== 'all',
     open: menu === 'status',
@@ -2989,14 +2988,7 @@ function ListScreen({
       setStatusF(k);
       setMenu(null);
     }
-  })), showClear && /*#__PURE__*/React.createElement("button", {
-    onClick: clearFilters,
-    title: tx('Clear all filters'),
-    "aria-label": tx('Clear all filters'),
-    className: "ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4"
-  }, Icon.close))))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 space-y-2.5 overflow-y-auto px-5 pb-8",
     ref: scrollRef,
     onScroll: onListScroll
