@@ -68,6 +68,38 @@ function statusIntent(key) {
 
 // Fixed "today" so behind/on-schedule logic is deterministic in the prototype.
 const TODAY = new Date('2026-06-06T00:00:00');
+
+// Estimated completion is shown as a date RANGE (not a single exact date) —
+// friendlier UX since grading turnaround is inherently an estimate.
+// estDate stays the authoritative single date used for behind/on-schedule math;
+// `est` becomes a human range string ending on that date.
+function fmtShort(d) {
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function estRange(iso, estDaysStr) {
+  const end = new Date(iso + 'T00:00:00');
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  const start = new Date(end);
+  start.setDate(start.getDate() - span);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  if (sameMonth) return `${start.toLocaleDateString('en-US', {
+    month: 'short'
+  })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`;
+  if (sameYear) return `${fmtShort(start)} – ${fmtShort(end)}, ${end.getFullYear()}`;
+  return `${fmtShort(start)}, ${start.getFullYear()} – ${fmtShort(end)}, ${end.getFullYear()}`;
+}
+// Business Turnaround Days is shown as a range too, using the same span as
+// the completion date range so the two stay consistent with each other.
+function turnaroundRange(estDaysStr) {
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  return `${days - span}-${days} Business Days`;
+}
 const ORDERS = [{
   id: 'o1',
   name: 'Autograph Series — Mackenyu',
@@ -76,7 +108,8 @@ const ORDERS = [{
   shipment: 'May 15 · 1st Shipment',
   num: '26793937',
   itemCount: 1,
-  est: 'Sep 25, 2026',
+  estDate: '2026-09-25',
+  est: estRange('2026-09-25', '90 Business Days'),
   estDays: '90 Business Days',
   status: 'research',
   group: 'progress',
@@ -98,7 +131,8 @@ const ORDERS = [{
   shipment: 'Apr 12 · 1st Shipment',
   num: '26770330',
   itemCount: 44,
-  est: 'Jul 23, 2026',
+  estDate: '2026-07-23',
+  est: estRange('2026-07-23', '40 Business Days'),
   estDays: '40 Business Days',
   status: 'ready',
   group: 'progress',
@@ -177,7 +211,8 @@ const ORDERS = [{
   shipment: 'Apr 30 · 2nd Shipment',
   num: '26717114',
   itemCount: 103,
-  est: 'Jun 8, 2026',
+  estDate: '2026-06-08',
+  est: estRange('2026-06-08', '25 Business Days'),
   estDays: '25 Business Days',
   status: 'grading',
   group: 'progress',
@@ -231,7 +266,8 @@ const ORDERS = [{
   shipment: 'May 20 · 2nd Shipment',
   num: '26781450',
   itemCount: 26,
-  est: 'Jul 2, 2026',
+  estDate: '2026-07-02',
+  est: estRange('2026-07-02', '45 Business Days'),
   estDays: '45 Business Days',
   status: 'research',
   group: 'progress',
@@ -265,7 +301,8 @@ const ORDERS = [{
   shipment: 'May 08 · 1st Shipment',
   num: '26788120',
   itemCount: 60,
-  est: 'Jun 18, 2026',
+  estDate: '2026-06-18',
+  est: estRange('2026-06-18', '20 Business Days'),
   estDays: '20 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -302,7 +339,8 @@ const ORDERS = [{
   shipment: 'May 02 · 1st Shipment',
   num: '26780114',
   itemCount: 8,
-  est: 'Jun 11, 2026',
+  estDate: '2026-06-11',
+  est: estRange('2026-06-11', '30 Business Days'),
   estDays: '30 Business Days',
   status: 'assembly',
   group: 'progress',
@@ -327,7 +365,8 @@ const ORDERS = [{
   shipment: 'Apr 25 · 1st Shipment',
   num: '26795500',
   itemCount: 5,
-  est: 'Jun 2, 2026',
+  estDate: '2026-06-02',
+  est: estRange('2026-06-02', '15 Business Days'),
   estDays: '15 Business Days',
   status: 'completing',
   group: 'progress',
@@ -379,7 +418,8 @@ const ORDERS = [{
   shipment: 'May 22 · 2nd Shipment',
   num: '26799010',
   itemCount: 3,
-  est: 'Aug 1, 2026',
+  estDate: '2027-01-03',
+  est: estRange('2027-01-03', '60 Business Days'),
   estDays: '60 Business Days',
   status: 'research',
   group: 'progress',
@@ -402,7 +442,8 @@ const ORDERS = [{
   shipment: 'May 26 · 2nd Shipment',
   num: '26801337',
   itemCount: 12,
-  est: 'Nov 13, 2026',
+  estDate: '2027-01-05',
+  est: estRange('2027-01-05', '120 Business Days'),
   estDays: '120 Business Days',
   status: 'arrived',
   group: 'progress',
@@ -3032,7 +3073,10 @@ function DetailScreen({
     openItems();
   };
   const _cd = order.completedOn ? new Date(order.completedOn) : null;
-  const _ed = order.est ? new Date(order.est) : null;
+  // `est` is now a human-readable range, so the behind/ahead maths reads the
+  // authoritative single date from `estDate` (older completed orders still
+  // carry a plain single-date `est`).
+  const _ed = order.estDate ? new Date(order.estDate + 'T00:00:00') : order.est ? new Date(order.est) : null;
   const daysEarly = _cd && _ed ? Math.round((_ed - _cd) / 86400000) : 0;
   const aheadOfSchedule = completed && daysEarly > 0;
   const behind = !completed && !isOrderPreDetail(order) && _ed && _ed < TODAY;
@@ -3073,7 +3117,7 @@ function DetailScreen({
     className: "flex min-h-[26px] items-start text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground"
   }, tx('Business Turnaround Days')), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-semibold text-foreground"
-  }, order.turnaround || order.estDays)), /*#__PURE__*/React.createElement("div", {
+  }, order.turnaround || turnaroundRange(order.estDays))), /*#__PURE__*/React.createElement("div", {
     className: "relative px-4 py-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-[26px] items-start pr-7 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
