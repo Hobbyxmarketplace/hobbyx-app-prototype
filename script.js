@@ -725,7 +725,7 @@ const ACCOUNT = {
     items: [['Account Info', 'user']]
   }, {
     group: 'Preferences',
-    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell']]
+    items: [['Appearance', 'sun'], ['Language', 'globe'], ['Notifications', 'bell'], ['Biometrics for Invoices', 'fingerprint']]
   }, {
     group: 'Support',
     items: [['Help Centre', 'help'], ['Terms & Policies', 'doc'], ['Contact Us', 'mail'], ['Sign Out', 'signout']]
@@ -1111,6 +1111,18 @@ const ZH = {
   // —— login errors ——
   'We couldn’t find an account with that email address.': '找不到使用此電郵地址的帳戶。',
   'Incorrect password. Please try again.': '密碼不正確。請再試一次。',
+  // —— invoices: auth gate + biometrics ——
+  'Invoices': '發票',
+  'Biometrics for Invoices': '發票生物認證',
+  'Enter your account password to continue.': '請輸入你的帳戶密碼以繼續。',
+  'Use Face/Touch ID': '使用 Face/Touch ID',
+  'Face/Touch ID didn’t match. Try again.': 'Face/Touch ID 不符，請再試一次。',
+  'Incorrect password. Try again.': '密碼不正確，請再試一次。',
+  'Scanning your face…': '正在掃描你的面容⋯',
+  'Face recognized': '面容已辨識',
+  'Face not recognized': '無法辨識面容',
+  'Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.': '發票已啟用生物認證。你可隨時於「帳戶 → 發票生物認證」關閉。',
+  'Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用 Face/Touch ID，即可免除輸入密碼。',
   // —— added: full country list + remaining UI strings ——
   'Macau': '澳門',
   'Afghanistan': '阿富汗',
@@ -1342,7 +1354,7 @@ function setLang(l) {
 }
 /* Traditional → Simplified character map — covers every Chinese character used in ZH.
    Characters identical in both scripts are omitted (left unchanged). */
-const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed';
+const T2S_PAIRS = '\u4e9e\u4e9a\u4e26\u5e76\u4f86\u6765\u5011\u4eec\u500b\u4e2a\u5099\u5907\u50b3\u4f20\u50c5\u4ec5\u50f9\u4ef7\u5132\u50a8\u5169\u4e24\u518a\u518c\u5225\u522b\u522a\u5220\u5247\u5219\u52d5\u52a8\u52d9\u52a1\u5354\u534f\u53c3\u53c2\u54e1\u5458\u55ae\u5355\u5617\u5c1d\u570b\u56fd\u5716\u56fe\u5834\u573a\u5922\u68a6\u5bf6\u5b9d\u5c07\u5c06\u5c0b\u5bfb\u5e33\u8d26\u5eab\u5e93\u5f35\u5f20\u5f37\u5f3a\u5f8c\u540e\u614b\u6001\u6232\u620f\u6236\u6237\u64c7\u62e9\u64ca\u51fb\u64da\u636e\u6578\u6570\u65bc\u4e8e\u6642\u65f6\u66ab\u6682\u66c9\u6653\u6703\u4f1a\u689d\u6761\u696d\u4e1a\u6a19\u6807\u6aa2\u68c0\u6bbc\u58f3\u6c7a\u51b3\u6c92\u6ca1\u6dfa\u6d45\u6e96\u51c6\u7063\u6e7e\u70ba\u4e3a\u7121\u65e0\u71df\u8425\u72c0\u72b6\u7372\u83b7\u73fe\u73b0\u756b\u753b\u7576\u5f53\u767c\u53d1\u76e1\u5c3d\u78ba\u786e\u78bc\u7801\u7a31\u79f0\u7a4d\u79ef\u7bc4\u8303\u7be9\u7b5b\u7c3d\u7b7e\u7c43\u7bee\u7c64\u7b7e\u7d1a\u7ea7\u7d30\u7ec6\u7d42\u7ec8\u7d50\u7ed3\u7d61\u7edc\u7d71\u7edf\u7d93\u7ecf\u7db2\u7f51\u7dda\u7ebf\u7de8\u7f16\u806f\u8054\u8072\u58f0\u8207\u4e0e\u820a\u65e7\u84cb\u76d6\u8655\u5904\u865f\u53f7\u88dd\u88c5\u88fd\u5236\u8996\u89c6\u89c0\u89c2\u89f8\u89e6\u8a02\u8ba2\u8a08\u8ba1\u8a0a\u8baf\u8a18\u8bb0\u8a2d\u8bbe\u8a31\u8bb8\u8a3b\u6ce8\u8a55\u8bc4\u8a5e\u8bcd\u8a66\u8bd5\u8a71\u8bdd\u8a73\u8be6\u8a8d\u8ba4\u8a9e\u8bed\u8acb\u8bf7\u8b49\u8bc1\u8b58\u8bc6\u8b77\u62a4\u8b80\u8bfb\u8b8a\u53d8\u8ca8\u8d27\u8cc7\u8d44\u8cca\u8d3c\u8cea\u8d28\u8e64\u8e2a\u8f15\u8f7b\u8f38\u8f93\u8f49\u8f6c\u9023\u8fde\u9032\u8fdb\u904a\u6e38\u9054\u8fbe\u9078\u9009\u90f5\u90ae\u9280\u94f6\u9451\u9274\u9577\u957f\u9580\u95e8\u958b\u5f00\u9593\u95f4\u95b1\u9605\u95dc\u5173\u968e\u9636\u96aa\u9669\u96b1\u9690\u96e2\u79bb\u96fb\u7535\u97d3\u97e9\u9801\u9875\u9805\u9879\u9810\u9884\u985e\u7c7b\u986f\u663e\u99ac\u9a6c\u9a57\u9a8c\u9b25\u6597\u9ede\u70b9\u5553\u542f\u5167\u5185\u555f\u542f\u5fa9\u590d\u7a05\u7a0e\u9304\u5f55\u5ee3\u5e7f\u9808\u987b\u723e\u5c14\u5967\u5965\u7f85\u7f57\u8332\u5179\u8c9d\u8d1d\u5be7\u5b81\u7dad\u7ef4\u7d0d\u7eb3\u840a\u83b1\u9ea5\u9ea6\u502b\u4f26\u525b\u521a\u85a9\u8428\u5e7e\u51e0\u611b\u7231\u862d\u5170\u6fdf\u6d4e\u5ca1\u5188\u9b6f\u9c81\u81d8\u814a\u7d39\u7ecd\u5cf6\u5c9b\u8cb7\u4e70\u7d04\u7ea6\u64be\u631d\u76e7\u5362\u88cf\u91cc\u7fa3\u7fa4\u7dec\u7f05\u9813\u987f\u52de\u52b3\u8cd3\u5bbe\u8056\u5723\u8afe\u8bfa\u8607\u82cf\u654d\u53d9\u6771\u4e1c\u6e6f\u6c64\u70cf\u4e4c\u8d0a\u8d5e\u97cb\u97e6\u700f\u6d4f\u89bd\u89c8\u5be9\u5ba1\u5e36\u5e26\u96a8\u968f\u5e2b\u5e08\u6b0a\u6743\u7e7c\u7ee7\u7e8c\u7eed\u6383\u626b\u9589\u95ed';
 const T2S = {};
 for (let i = 0; i < T2S_PAIRS.length; i += 2) {
   T2S[T2S_PAIRS[i]] = T2S_PAIRS[i + 1];
@@ -1569,6 +1581,44 @@ const Icon = {
     rx: "2"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M7 11V7a5 5 0 0 1 10 0v4"
+  })),
+  fingerprint: /*#__PURE__*/React.createElement("svg", _extends({
+    viewBox: "0 0 24 24"
+  }, sx), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 0-8 8c0 4 1.5 6 2 7"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 2a8 8 0 0 1 8 8c0 5-1 7-1 8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 20c-1-2-2-4-2-8a6 6 0 0 1 12 0c0 1.5-.3 2.8-.7 4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 0-4 4c0 3 1 4.5 1.5 6"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8a4 4 0 0 1 4 4c0 2-.3 3.5-1 5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 12v2c0 1.5.3 3 1 4.5"
+  })),
+  faceScan: /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 64 64",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M6 18V10a4 4 0 0 1 4-4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M46 6h8a4 4 0 0 1 4 4v8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 46v8a4 4 0 0 0 4 4h8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M58 46v8a4 4 0 0 1-4 4h-8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M22 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M42 26v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M32 28v8c0 1.5-1 2-2 2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M23 42c2.2 2 4.8 3 9 3s6.8-1 9-3"
   })),
   more: /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 24 24",
@@ -3058,6 +3108,72 @@ function DetailScreen({
   const imagesReady = order.items.some(it => it.grade || it.img || it.slab);
   const [tip, setTip] = useStateG(false);
   const [confirmSkip, setConfirmSkip] = useStateG(false);
+  // Invoices sit behind an auth gate — password, or Face/Touch ID when the
+  // "Biometrics for Invoices" preference is on (Account → Preferences).
+  const [showInvoice, setShowInvoice] = useStateG(false);
+  const [showAuthGate, setShowAuthGate] = useStateG(false);
+  const [gatePw, setGatePw] = useStateG('');
+  const [gatePwErr, setGatePwErr] = useStateG(false);
+  const [bioPhase, setBioPhase] = useStateG('idle');
+  const [bioError, setBioError] = useStateG(false);
+  const bioBusy = bioPhase !== 'idle';
+  const bioEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('hobbyx_bio_invoices') !== '0';
+  // A grading order is billed across one or more invoices; the split is derived
+  // from the order id so the prototype shows stable numbers between renders.
+  const invoiceList = React.useMemo(function () {
+    let seed = 0;
+    const s = order.id || '';
+    for (let k = 0; k < s.length; k++) seed = seed * 31 + s.charCodeAt(k) >>> 0;
+    const rand = function () {
+      seed = seed * 1103515245 + 12345 >>> 0;
+      return seed / 4294967296;
+    };
+    const total = order.itemCount || 1;
+    const n = Math.min(4, Math.max(1, total), Math.floor(rand() * 4) + 1);
+    const cuts = [];
+    let remaining = total;
+    for (let i = 0; i < n - 1; i++) {
+      const share = Math.max(1, Math.min(remaining - (n - i - 1), Math.round(remaining / (n - i) * (0.5 + rand()))));
+      cuts.push(share);
+      remaining -= share;
+    }
+    cuts.push(remaining);
+    return cuts.map(function (cards) {
+      return {
+        inv: 'H' + String(Math.floor(rand() * 900000) + 100000).padStart(6, '0'),
+        cards
+      };
+    });
+  }, [order.id, order.itemCount]);
+  const openInvoiceGate = () => {
+    setGatePw('');
+    setGatePwErr(false);
+    setBioError(false);
+    setShowAuthGate(true);
+  };
+  const submitGatePw = () => {
+    if (gatePw === 'Test@123') {
+      setShowAuthGate(false);
+      setShowInvoice(true);
+    } else setGatePwErr(true);
+  };
+  const tryBiometrics = () => {
+    setBioError(false);
+    setBioPhase('scanning');
+    setTimeout(() => {
+      const ok = Math.random() > 0.15;
+      setBioPhase(ok ? 'success' : 'failed');
+      setTimeout(() => {
+        setBioPhase('idle');
+        if (ok) {
+          setShowAuthGate(false);
+          setShowInvoice(true);
+        } else {
+          setBioError(true);
+        }
+      }, ok ? 700 : 900);
+    }, 1100);
+  };
   // View all is always available once images are ready. If grades aren't revealed
   // yet, confirm that the user wants to skip the reveal before jumping to the list.
   const handleViewAll = () => {
@@ -3105,7 +3221,12 @@ function DetailScreen({
     className: "text-[26px] font-extrabold leading-tight tracking-tight text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-[15px] font-semibold text-primary"
-  }, order.shipment || tx(order.category)), imagesReady && /*#__PURE__*/React.createElement("div", {
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("button", {
+    onClick: openInvoiceGate,
+    className: "mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition active:scale-[.96] active:bg-accent"
+  }, tx('Invoices'), " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-muted-foreground"
+  }, "(", invoiceList.length, ")")), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-medium text-muted-foreground"
   }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
@@ -3206,7 +3327,90 @@ function DetailScreen({
     className: "mb-3 text-base font-bold text-foreground"
   }, tx('Status')), /*#__PURE__*/React.createElement(Stepper, {
     order: order
-  }))), confirmSkip && /*#__PURE__*/React.createElement("div", {
+  }))), showAuthGate && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => {
+      if (!bioBusy) setShowAuthGate(false);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-5 w-5"
+  }, Icon.lock)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-[13px] font-medium text-muted-foreground"
+  }, tx('Enter your account password to continue.')), bioEnabled && /*#__PURE__*/React.createElement("button", {
+    onClick: tryBiometrics,
+    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99]"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4"
+  }, Icon.fingerprint), tx('Use Face/Touch ID')), bioEnabled && bioError && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-3.5 w-3.5"
+  }, Icon.close), tx('Face/Touch ID didn’t match. Try again.')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: gatePw,
+    onChange: e => {
+      setGatePw(e.target.value);
+      setGatePwErr(false);
+    },
+    placeholder: tx('Password'),
+    className: 'h-11 w-full rounded-md border bg-background px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none ' + (gatePwErr ? 'border-red-400' : 'border-input')
+  }), gatePwErr && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1.5 text-xs font-semibold text-red-500"
+  }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement("button", {
+    onClick: submitGatePw,
+    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent"
+  }, tx('Continue')), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, bioEnabled ? tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.') : tx('Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.')))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm",
+    style: {
+      animation: 'faceScanFade .25s ease'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center",
+    style: {
+      animation: 'faceScanPop .3s cubic-bezier(.34,1.56,.64,1)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: 'relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 ' + (bioPhase === 'success' ? 'border-success text-success' : bioPhase === 'failed' ? 'border-red-400 text-red-400' : 'border-white/70 text-white')
+  }, bioPhase === 'scanning' && /*#__PURE__*/React.createElement("span", {
+    className: "absolute inset-0 rounded-2xl border-2 border-white/40",
+    style: {
+      animation: 'faceScanPulse 1.4s ease-out infinite'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "h-9 w-9"
+  }, bioPhase === 'success' ? Icon.check : bioPhase === 'failed' ? Icon.close : Icon.faceScan)), /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-sm font-semibold text-white"
+  }, bioPhase === 'scanning' ? tx('Scanning your face…') : bioPhase === 'success' ? tx('Face recognized') : tx('Face not recognized')))), showInvoice && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
+    onClick: () => setShowInvoice(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-extrabold leading-tight text-foreground"
+  }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 text-sm font-semibold text-primary"
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-[13px] font-semibold text-muted-foreground"
+  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 divide-y divide-border"
+  }, invoiceList.map(iv => /*#__PURE__*/React.createElement("div", {
+    key: iv.inv,
+    className: "flex items-center justify-between gap-3 py-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[15px] font-semibold text-foreground"
+  }, iv.inv), /*#__PURE__*/React.createElement("span", {
+    className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'card' : 'cards'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSkip(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4083,6 +4287,21 @@ function AccountScreen({
   onDeletionScheduled
 }) {
   const [notif, setNotif] = useStateG(true);
+  // Persisted so the invoice auth gate in DetailScreen can read the preference
+  // without threading it through the router.
+  const [bioInvoices, setBioInvoices] = useStateG(() => {
+    try {
+      return localStorage.getItem('hobbyx_bio_invoices') !== '0';
+    } catch (e) {
+      return true;
+    }
+  });
+  const toggleBio = v => {
+    setBioInvoices(v);
+    try {
+      localStorage.setItem('hobbyx_bio_invoices', v ? '1' : '0');
+    } catch (e) {}
+  };
   const [showPolicies, setShowPolicies] = useStateG(false);
   const [confirmSignOut, setConfirmSignOut] = useStateG(false);
   const [pendingExt, setPendingExt] = useStateG(null);
@@ -4158,7 +4377,8 @@ function AccountScreen({
     const isAppearance = label === 'Appearance';
     const isLanguage = label === 'Language';
     const isNotifications = label === 'Notifications';
-    const isControl = isAppearance || isLanguage || isNotifications;
+    const isBio = label === 'Biometrics for Invoices';
+    const isControl = isAppearance || isLanguage || isNotifications || isBio;
     const isHelp = label === 'Help Centre';
     const isPolicies = label === 'Terms & Policies';
     const isContact = label === 'Contact Us';
@@ -4173,6 +4393,9 @@ function AccountScreen({
     }) : isLanguage ? /*#__PURE__*/React.createElement(LangToggle, null) : isNotifications ? /*#__PURE__*/React.createElement(Switch, {
       checked: notif,
       onChange: setNotif
+    }) : isBio ? /*#__PURE__*/React.createElement(Switch, {
+      checked: bioInvoices,
+      onChange: toggleBio
     }) : !danger && !isDelete && /*#__PURE__*/React.createElement("span", {
       className: 'h-4 w-4 text-muted-foreground transition-transform ' + (isPolicies && showPolicies ? 'rotate-90' : '')
     }, isHelp ? Icon.external : Icon.chevR));
