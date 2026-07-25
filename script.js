@@ -1405,33 +1405,18 @@ function LangToggle({
   className = ''
 }) {
   const [lang, set] = useLang();
-  const val = normLang(lang);
-  return /*#__PURE__*/React.createElement("div", {
-    className: 'inline-flex items-center ' + className
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: val,
-    onChange: e => set(e.target.value),
-    "aria-label": "Language",
-    style: {
-      minWidth: '7rem'
-    },
-    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
-  }, LANGS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: k
-  }, l))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 24 24",
-    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
+  return /*#__PURE__*/React.createElement(SelectMenu, {
+    className: className,
+    value: normLang(lang),
+    // language names stay in their own script — never translated
+    translate: false,
+    options: LANGS.map(([k, l]) => ({
+      key: k,
+      label: l
+    })),
+    onPick: set,
+    ariaLabel: "Language"
+  });
 }
 const APPEARANCE_PREFS = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
 function AppearanceSelect({
@@ -1439,32 +1424,16 @@ function AppearanceSelect({
   onChange,
   className = ''
 }) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: 'inline-flex items-center ' + className
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center"
-  }, /*#__PURE__*/React.createElement("select", {
+  return /*#__PURE__*/React.createElement(SelectMenu, {
+    className: className,
     value: value,
-    onChange: e => onChange(e.target.value),
-    "aria-label": tx('Appearance'),
-    style: {
-      minWidth: '6.5rem'
-    },
-    className: "max-w-[140px] cursor-pointer appearance-none rounded-full border border-border bg-card py-1 pl-3 pr-7 text-xs font-bold text-foreground transition-colors hover:bg-accent focus:border-ring focus:outline-none"
-  }, APPEARANCE_PREFS.map(([k, l]) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: k
-  }, tx(l)))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 24 24",
-    className: "pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "m6 9 6 6 6-6"
-  }))));
+    options: APPEARANCE_PREFS.map(([k, l]) => ({
+      key: k,
+      label: l
+    })),
+    onPick: onChange,
+    ariaLabel: tx('Appearance')
+  });
 }
 Object.assign(window, {
   tx,
@@ -2838,7 +2807,8 @@ function Menu({
   items,
   current,
   onPick,
-  align
+  align,
+  translate = true
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: 'absolute z-30 mt-2 w-max min-w-full rounded-md border border-border bg-popover p-1 shadow-lg ' + (align === 'right' ? 'right-0' : 'left-0')
@@ -2846,7 +2816,7 @@ function Menu({
     key: it.key,
     onClick: () => onPick(it.key),
     className: "flex w-full items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
-  }, tx(it.label), current === it.key && /*#__PURE__*/React.createElement("span", {
+  }, translate ? tx(it.label) : it.label, current === it.key && /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0 text-primary"
   }, Icon.check))));
 }
@@ -2856,20 +2826,61 @@ function FilterBtn({
   active,
   open,
   onClick,
-  full
+  full,
+  ariaLabel
 }) {
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
+    "aria-label": ariaLabel,
     className: 'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (full ? 'w-full justify-between ' : 'shrink-0 ') + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
   }, /*#__PURE__*/React.createElement("span", {
     className: full ? 'flex min-w-0 items-center gap-1.5' : 'flex items-center gap-1.5'
-  }, /*#__PURE__*/React.createElement("span", {
+  }, icon && /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0"
   }, icon), /*#__PURE__*/React.createElement("span", {
     className: full ? 'truncate' : 'max-w-[130px] truncate'
   }, label)), /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5 shrink-0 opacity-60"
   }, Icon.chevD));
+}
+
+/* Same button + popover as the list filters, for the standalone selects
+   (Appearance, Language). Owns its own open state and click-away catcher. */
+function SelectMenu({
+  value,
+  options,
+  onPick,
+  align = 'right',
+  translate = true,
+  ariaLabel,
+  className = ''
+}) {
+  const [open, setOpen] = useStateG(false);
+  const current = options.find(o => o.key === value);
+  const label = current ? translate ? tx(current.label) : current.label : '';
+  return /*#__PURE__*/React.createElement("div", {
+    className: 'inline-flex items-center ' + className
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative inline-flex items-center",
+    onClick: e => e.stopPropagation()
+  }, open && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-20",
+    onClick: () => setOpen(false)
+  }), /*#__PURE__*/React.createElement(FilterBtn, {
+    label: label,
+    open: open,
+    ariaLabel: ariaLabel,
+    onClick: () => setOpen(v => !v)
+  }), open && /*#__PURE__*/React.createElement(Menu, {
+    items: options,
+    current: value,
+    align: align,
+    translate: translate,
+    onPick: k => {
+      onPick(k);
+      setOpen(false);
+    }
+  })));
 }
 
 /* ---------- LIST ---------- */
@@ -4380,7 +4391,7 @@ function AccountScreen({
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"
   }, tx(grp.group)), /*#__PURE__*/React.createElement("div", {
-    className: "overflow-hidden rounded-lg border border-border bg-card"
+    className: "rounded-lg border border-border bg-card"
   }, grp.items.map(([label, ic], ii) => {
     const isDelete = label === 'Delete Account';
     const danger = label === 'Sign Out';
@@ -4408,8 +4419,8 @@ function AccountScreen({
       onChange: toggleBio
     }) : !danger && !isDelete && /*#__PURE__*/React.createElement("span", {
       className: 'h-4 w-4 text-muted-foreground transition-transform ' + (isPolicies && showPolicies ? 'rotate-90' : '')
-    }, isHelp ? Icon.external : Icon.chevR));
-    const rowCls = 'flex w-full items-center justify-between px-4 py-3.5 ' + (ii > 0 ? 'border-t border-border' : '');
+    }, isHelp || isContact ? Icon.external : Icon.chevR));
+    const rowCls = 'flex w-full items-center justify-between px-4 py-3.5 ' + (ii > 0 ? 'border-t border-border ' : '') + (ii === 0 ? 'rounded-t-lg ' : '') + (ii === grp.items.length - 1 ? 'rounded-b-lg' : '');
     if (isControl) return /*#__PURE__*/React.createElement("div", {
       key: ii,
       className: rowCls
