@@ -1415,6 +1415,7 @@ function LangToggle({
       label: l
     })),
     onPick: set,
+    minWidth: '7rem',
     ariaLabel: "Language"
   });
 }
@@ -1432,6 +1433,7 @@ function AppearanceSelect({
       label: l
     })),
     onPick: onChange,
+    minWidth: '6.5rem',
     ariaLabel: tx('Appearance')
   });
 }
@@ -2826,16 +2828,14 @@ function FilterBtn({
   active,
   open,
   onClick,
-  full,
-  ariaLabel
+  full
 }) {
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
-    "aria-label": ariaLabel,
     className: 'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-3 text-sm font-semibold text-foreground transition ' + (full ? 'w-full justify-between ' : 'shrink-0 ') + (active || open ? 'border-ring ring-2 ring-ring/30' : 'border-input hover:bg-accent')
   }, /*#__PURE__*/React.createElement("span", {
     className: full ? 'flex min-w-0 items-center gap-1.5' : 'flex items-center gap-1.5'
-  }, icon && /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0"
   }, icon), /*#__PURE__*/React.createElement("span", {
     className: full ? 'truncate' : 'max-w-[130px] truncate'
@@ -2844,15 +2844,15 @@ function FilterBtn({
   }, Icon.chevD));
 }
 
-/* Same button + popover as the list filters, for the standalone selects
-   (Appearance, Language). Owns its own open state and click-away catcher. */
+/* Pill trigger (unchanged) with the list filters' popover in place of the
+   native <select> list, so it opens just below with the same design. */
 function SelectMenu({
   value,
   options,
   onPick,
-  align = 'right',
   translate = true,
   ariaLabel,
+  minWidth,
   className = ''
 }) {
   const [open, setOpen] = useStateG(false);
@@ -2866,15 +2866,29 @@ function SelectMenu({
   }, open && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-20",
     onClick: () => setOpen(false)
-  }), /*#__PURE__*/React.createElement(FilterBtn, {
-    label: label,
-    open: open,
-    ariaLabel: ariaLabel,
-    onClick: () => setOpen(v => !v)
-  }), open && /*#__PURE__*/React.createElement(Menu, {
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(v => !v),
+    "aria-label": ariaLabel,
+    style: {
+      minWidth
+    },
+    className: 'relative max-w-[140px] cursor-pointer rounded-full border bg-card py-1 pl-3 pr-7 text-left text-xs font-bold text-foreground transition-colors hover:bg-accent focus:outline-none ' + (open ? 'border-ring' : 'border-border')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "block truncate"
+  }, label), /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 24 24",
+    className: "pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "m6 9 6 6 6-6"
+  }))), open && /*#__PURE__*/React.createElement(Menu, {
     items: options,
     current: value,
-    align: align,
+    align: "right",
     translate: translate,
     onPick: k => {
       onPick(k);
