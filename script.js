@@ -80,6 +80,13 @@ function estRange(iso, estDaysStr) {
   if (sameYear) return `${fmtShort(start)} – ${fmtShort(end)}, ${end.getFullYear()}`;
   return `${fmtShort(start)}, ${start.getFullYear()} – ${fmtShort(end)}, ${end.getFullYear()}`;
 }
+// Business Turnaround Days is shown as a range too, using the same span as
+// the completion date range so the two stay consistent with each other.
+function turnaroundRange(estDaysStr) {
+  const days = +(/(\d+)/.exec(estDaysStr) || [, 30])[1];
+  const span = Math.min(14, Math.max(5, Math.round(days / 10)));
+  return `${days - span}-${days} Business Days`;
+}
 const ORDERS = [{
   id: 'o1',
   name: 'Autograph Series — Mackenyu',
@@ -2942,7 +2949,7 @@ function DetailScreen({
     className: "flex min-h-[26px] items-start text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground"
   }, tx('Business Turnaround Days')), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-semibold text-foreground"
-  }, order.turnaround || order.estDays)), /*#__PURE__*/React.createElement("div", {
+  }, order.turnaround || turnaroundRange(order.estDays))), /*#__PURE__*/React.createElement("div", {
     className: "relative px-4 py-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-[26px] items-start pr-7 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
