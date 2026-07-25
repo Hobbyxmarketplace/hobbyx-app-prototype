@@ -1415,7 +1415,6 @@ function LangToggle({
       label: l
     })),
     onPick: set,
-    minWidth: '7rem',
     ariaLabel: "Language"
   });
 }
@@ -1433,7 +1432,6 @@ function AppearanceSelect({
       label: l
     })),
     onPick: onChange,
-    minWidth: '6.5rem',
     ariaLabel: tx('Appearance')
   });
 }
@@ -2813,7 +2811,7 @@ function Menu({
   translate = true
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: 'absolute z-30 mt-2 w-max min-w-full rounded-md border border-border bg-popover p-1 shadow-lg ' + (align === 'right' ? 'right-0' : 'left-0')
+    className: 'absolute top-full z-30 mt-2 w-max min-w-full rounded-md border border-border bg-popover p-1 shadow-lg ' + (align === 'right' ? 'right-0' : 'left-0')
   }, items.map(it => /*#__PURE__*/React.createElement("button", {
     key: it.key,
     onClick: () => onPick(it.key),
@@ -2852,7 +2850,6 @@ function SelectMenu({
   onPick,
   translate = true,
   ariaLabel,
-  minWidth,
   className = ''
 }) {
   const [open, setOpen] = useStateG(false);
@@ -2861,7 +2858,7 @@ function SelectMenu({
   return /*#__PURE__*/React.createElement("div", {
     className: 'inline-flex items-center ' + className
   }, /*#__PURE__*/React.createElement("div", {
-    className: "relative inline-flex items-center",
+    className: "relative inline-block",
     onClick: e => e.stopPropagation()
   }, open && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-20",
@@ -2870,9 +2867,9 @@ function SelectMenu({
     onClick: () => setOpen(v => !v),
     "aria-label": ariaLabel,
     style: {
-      minWidth
+      width: '7rem'
     },
-    className: 'relative max-w-[140px] cursor-pointer rounded-full border bg-card py-1 pl-3 pr-7 text-left text-xs font-bold text-foreground transition-colors hover:bg-accent focus:outline-none ' + (open ? 'border-ring' : 'border-border')
+    className: 'relative cursor-pointer rounded-full border bg-card py-1 pl-3 pr-7 text-left text-xs font-bold text-foreground transition-colors hover:bg-accent focus:outline-none ' + (open ? 'border-ring' : 'border-border')
   }, /*#__PURE__*/React.createElement("span", {
     className: "block truncate"
   }, label), /*#__PURE__*/React.createElement("svg", {
@@ -3445,7 +3442,7 @@ function DetailScreen({
     className: "text-[15px] font-semibold text-foreground"
   }, iv.inv), /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
-  }, iv.cards, " ", tx(iv.cards === 1 ? 'card' : 'cards'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSkip(false)
   }, /*#__PURE__*/React.createElement("div", {
