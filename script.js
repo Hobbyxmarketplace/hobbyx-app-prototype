@@ -4801,36 +4801,31 @@ function SkeletonScreen({
     }, /*#__PURE__*/React.createElement("span", {
       className: "h-5 w-5"
     }, Icon.bell)), /*#__PURE__*/React.createElement(SkBlock, {
-      c: "h-10 w-10 rounded-full"
-    }))), /*#__PURE__*/React.createElement(Tabs, {
-      value: "progress",
-      onChange: () => {},
-      tabs: TABS_WITH_COUNTS
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "px-5 pb-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "relative flex items-center"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground"
-    }, Icon.search), /*#__PURE__*/React.createElement("input", {
-      disabled: true,
-      placeholder: tx('Search by service name'),
-      className: "h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground"
+      c: "h-9 w-9 rounded-full"
+    }))),
+    // The tabs, search field and filters arrive with the data, so they load as
+    // skeletons too. Each block keeps the exact footprint of the control it
+    // stands in for — h-10 tabs track, h-10 search, h-9 filters in two equal
+    // columns — so nothing shifts when the real row replaces it.
+    /*#__PURE__*/React.createElement("div", {
+      className: "mx-5 mb-3"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-10 w-full rounded-lg"
     })), /*#__PURE__*/React.createElement("div", {
+      className: "px-5 pb-3"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-10 w-full rounded-md"
+    }), /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5 flex gap-2"
-    }, /*#__PURE__*/React.createElement(FilterBtn, {
-      icon: Icon.sort,
-      label: tx(SORTS.find(s => s.key === 'newest').short),
-      active: false,
-      open: false,
-      onClick: () => {}
-    }), /*#__PURE__*/React.createElement(FilterBtn, {
-      icon: Icon.sliders,
-      label: tx('Status'),
-      active: false,
-      open: false,
-      onClick: () => {}
-    }))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-9 w-full rounded-md"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }, /*#__PURE__*/React.createElement(SkBlock, {
+      c: "h-9 w-full rounded-md"
+    })))), /*#__PURE__*/React.createElement("div", {
       className: "no-scrollbar flex-1 space-y-2.5 overflow-y-auto px-5 pb-8"
     }, /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null), /*#__PURE__*/React.createElement(SkRow, null)));
   }
