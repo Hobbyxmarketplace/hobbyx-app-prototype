@@ -1152,8 +1152,8 @@ const ZH = {
   'Partially picked up': '部分已取貨',
   'Invoice numbers are not available yet.': '發票號碼尚未分配。',
   'Pickup date': '取貨日期',
-  'Some of your invoices have been picked up. Remaining items are still ready for pickup at Mongkok Store.': '您的部分發票已取貨，其餘物品仍可在 HobbyX 旺角店取貨。',
-  'All invoices for this order have been picked up.': '此訂單的所有發票均已取貨。',
+  'Some invoices were picked up. The rest is ready at Mongkok Store.': '部分發票已取貨，其餘可到旺角店取。',
+  'All invoices for this order have been picked up.': '此訂單所有發票均已取貨。',
   // legacy aliases kept for older prototype strings
   'Use Face/Touch ID': '使用 Face ID',
   'Face/Touch ID didn\'t match. Try again.': 'Face ID 不符，請再試一次。',
