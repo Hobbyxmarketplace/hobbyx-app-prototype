@@ -1129,16 +1129,38 @@ const ZH = {
   'Incorrect password. Please try again.': '密碼不正確。請再試一次。',
   // —— invoices: auth gate + biometrics ——
   'Invoices': '發票',
+  'Store invoice numbers for your items': '您物品對應的門店發票號碼',
   'Biometrics for Invoices': '發票生物認證',
+  'Use {{method}} to unlock invoice numbers': '使用{{method}}解鎖發票號碼',
   'Enter your account password to continue.': '請輸入你的帳戶密碼以繼續。',
-  'Use Face/Touch ID': '使用 Face/Touch ID',
-  'Face/Touch ID didn’t match. Try again.': 'Face/Touch ID 不符，請再試一次。',
+  'Use Face ID': '使用 Face ID',
+  'Use {{method}}': '使用{{method}}',
+  'Enable Face ID for invoices': '為發票啟用 Face ID',
+  'Enable {{method}} for invoices': '為發票啟用{{method}}',
+  "Face ID didn't match. Try again.": 'Face ID 不符，請再試一次。',
+  '{{method}} didn\'t match. Try again.': '{{method}}不符，請再試一次。',
   'Incorrect password. Try again.': '密碼不正確，請再試一次。',
-  'Scanning your face…': '正在掃描你的面容⋯',
-  'Face recognized': '面容已辨識',
-  'Face not recognized': '無法辨識面容',
+  'Scanning…': '正在掃描⋯',
+  'Verified': '已驗證',
+  'Verify to view invoices': '驗證以查看發票',
   'Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.': '發票已啟用生物認證。你可隨時於「帳戶 → 發票生物認證」關閉。',
-  'Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用 Face/Touch ID，即可免除輸入密碼。',
+  'Tip: enable {{method}} for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用{{method}}，即可免除輸入密碼。',
+  '{{method}} isn\'t available on this device. Continue with your password.': '此裝置無法使用{{method}}，請使用密碼繼續。',
+  'Ready for pickup': '待取貨',
+  'Picked up': '已取貨',
+  'Pickup Ready': '可取貨',
+  'Partially picked up': '部分已取貨',
+  'Invoice numbers are not available yet.': '發票號碼尚未分配。',
+  'Pickup date': '取貨日期',
+  'Some of your invoices have been picked up. Remaining items are still ready for pickup at Mongkok Store.': '您的部分發票已取貨，其餘物品仍可在 HobbyX 旺角店取貨。',
+  'All invoices for this order have been picked up.': '此訂單的所有發票均已取貨。',
+  // legacy aliases kept for older prototype strings
+  'Use Face/Touch ID': '使用 Face ID',
+  'Face/Touch ID didn\'t match. Try again.': 'Face ID 不符，請再試一次。',
+  'Scanning your face…': '正在掃描⋯',
+  'Face recognized': '已驗證',
+  'Face not recognized': 'Face ID 不符，請再試一次。',
+  'Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用 Face ID，即可免除輸入密碼。',
   // —— added: full country list + remaining UI strings ——
   'Macau': '澳門',
   'Afghanistan': '阿富汗',
@@ -1383,6 +1405,29 @@ function tx(s) {
   if (!l || l === 'en' || s == null) return s;
   const t = ZH[s] || s; // Traditional (or English passthrough)
   return isSimp(l) ? t.replace(/[\u3400-\u9fff]/g, c => T2S[c] || c) : t;
+}
+function txVars(s, vars) {
+  let out = tx(s);
+  if (!vars) return out;
+  Object.keys(vars).forEach((key) => {
+    out = out.split('{{' + key + '}}').join(vars[key]);
+  });
+  return out;
+}
+function readBioInvoicesPref() {
+  try {
+    return localStorage.getItem('hobbyx_bio_invoices') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function writeBioInvoicesPref(enabled) {
+  try {
+    localStorage.setItem('hobbyx_bio_invoices', enabled ? '1' : '0');
+  } catch (e) {}
+}
+function bioMethodLabel() {
+  return tx('Face ID');
 }
 function useLang() {
   const [, force] = useI18nState(0);
@@ -3149,7 +3194,8 @@ function DetailScreen({
   const [bioPhase, setBioPhase] = useStateG('idle');
   const [bioError, setBioError] = useStateG(false);
   const bioBusy = bioPhase !== 'idle';
-  const bioEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('hobbyx_bio_invoices') !== '0';
+  const bioEnabled = readBioInvoicesPref();
+  const bioMethod = bioMethodLabel();
   // A grading order is billed across one or more invoices; the split is derived
   // from the order id so the prototype shows stable numbers between renders.
   const invoiceList = React.useMemo(function () {
@@ -3170,10 +3216,13 @@ function DetailScreen({
       remaining -= share;
     }
     cuts.push(remaining);
-    return cuts.map(function (cards) {
+    return cuts.map(function (cards, index) {
+      const pickedUp = index > 0 && rand() > 0.45;
       return {
         inv: 'H' + String(Math.floor(rand() * 900000) + 100000).padStart(6, '0'),
-        cards
+        cards: cards,
+        pickedUp: pickedUp,
+        pickupDate: pickedUp ? 'Jun 12, 2026' : null
       };
     });
   }, [order.id, order.itemCount]);
@@ -3183,10 +3232,13 @@ function DetailScreen({
     setBioError(false);
     setShowAuthGate(true);
   };
+  const unlockInvoices = () => {
+    setShowAuthGate(false);
+    setShowInvoice(true);
+  };
   const submitGatePw = () => {
     if (gatePw === 'Test@123') {
-      setShowAuthGate(false);
-      setShowInvoice(true);
+      unlockInvoices();
     } else setGatePwErr(true);
   };
   const tryBiometrics = () => {
@@ -3198,14 +3250,27 @@ function DetailScreen({
       setTimeout(() => {
         setBioPhase('idle');
         if (ok) {
-          setShowAuthGate(false);
-          setShowInvoice(true);
+          unlockInvoices();
         } else {
           setBioError(true);
         }
       }, ok ? 700 : 900);
     }, 1100);
   };
+  const enableBiometricsFromGate = () => {
+    writeBioInvoicesPref(true);
+    tryBiometrics();
+  };
+  const bioAutoTriggeredRef = React.useRef(false);
+  React.useEffect(function () {
+    if (!showAuthGate) {
+      bioAutoTriggeredRef.current = false;
+      return;
+    }
+    if (!bioEnabled || bioBusy || bioAutoTriggeredRef.current) return;
+    bioAutoTriggeredRef.current = true;
+    tryBiometrics();
+  }, [showAuthGate, bioEnabled, bioBusy]);
   // View all is always available once images are ready. If grades aren't revealed
   // yet, confirm that the user wants to skip the reveal before jumping to the list.
   const handleViewAll = () => {
@@ -3253,12 +3318,20 @@ function DetailScreen({
     className: "text-[26px] font-extrabold leading-tight tracking-tight text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-[15px] font-semibold text-primary"
-  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("button", {
+  }, order.shipment || tx(order.category)), invoiceList.length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: openInvoiceGate,
-    className: "mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition active:scale-[.96] active:bg-accent"
-  }, tx('Invoices'), " ", /*#__PURE__*/React.createElement("span", {
-    className: "text-muted-foreground"
-  }, "(", invoiceList.length, ")")), imagesReady && /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-left shadow-sm transition active:scale-[.99] active:bg-accent/40"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-[18px] w-[18px]"
+  }, Icon.doc)), /*#__PURE__*/React.createElement("span", {
+    className: "flex-1 text-base font-semibold text-foreground"
+  }, tx('Invoices')), /*#__PURE__*/React.createElement("span", {
+    className: "flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground"
+  }, invoiceList.length), /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4 text-muted-foreground"
+  }, Icon.chevR)), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-sm font-medium text-muted-foreground"
   }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
@@ -3375,14 +3448,19 @@ function DetailScreen({
     className: "mt-3 text-center text-[13px] font-medium text-muted-foreground"
   }, tx('Enter your account password to continue.')), bioEnabled && /*#__PURE__*/React.createElement("button", {
     onClick: tryBiometrics,
-    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99]"
+    disabled: bioBusy,
+    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99] disabled:opacity-60"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
-  }, Icon.fingerprint), tx('Use Face/Touch ID')), bioEnabled && bioError && /*#__PURE__*/React.createElement("div", {
+  }, Icon.fingerprint), txVars('Use {{method}}', {
+    method: bioMethod
+  })), bioEnabled && bioError && /*#__PURE__*/React.createElement("div", {
     className: "mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-3.5 w-3.5"
-  }, Icon.close), tx('Face/Touch ID didn’t match. Try again.')), /*#__PURE__*/React.createElement("div", {
+  }, Icon.close), txVars('{{method}} didn\'t match. Try again.', {
+    method: bioMethod
+  })), /*#__PURE__*/React.createElement("div", {
     className: "mt-4"
   }, /*#__PURE__*/React.createElement("input", {
     type: "password",
@@ -3398,9 +3476,19 @@ function DetailScreen({
   }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement("button", {
     onClick: submitGatePw,
     className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent"
-  }, tx('Continue')), /*#__PURE__*/React.createElement("p", {
+  }, tx('Continue')), bioEnabled ? /*#__PURE__*/React.createElement("p", {
     className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
-  }, bioEnabled ? tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.') : tx('Tip: enable Face/Touch ID for invoices in Account → Biometrics for Invoices, so you can skip typing your password.')))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
+  }, tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.')) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, txVars('Tip: enable {{method}} for invoices in Account → Biometrics for Invoices, so you can skip typing your password.', {
+    method: bioMethod
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: enableBiometricsFromGate,
+    disabled: bioBusy,
+    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent disabled:opacity-60"
+  }, txVars('Enable {{method}} for invoices', {
+    method: bioMethod
+  })))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm",
     style: {
       animation: 'faceScanFade .25s ease'
@@ -3421,7 +3509,9 @@ function DetailScreen({
     className: "h-9 w-9"
   }, bioPhase === 'success' ? Icon.check : bioPhase === 'failed' ? Icon.close : Icon.faceScan)), /*#__PURE__*/React.createElement("p", {
     className: "mt-4 text-sm font-semibold text-white"
-  }, bioPhase === 'scanning' ? tx('Scanning your face…') : bioPhase === 'success' ? tx('Face recognized') : tx('Face not recognized')))), showInvoice && /*#__PURE__*/React.createElement("div", {
+  }, bioPhase === 'scanning' ? tx('Scanning…') : bioPhase === 'success' ? tx('Verified') : txVars('{{method}} didn\'t match. Try again.', {
+    method: bioMethod
+  }))))), showInvoice && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setShowInvoice(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -3429,20 +3519,28 @@ function DetailScreen({
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-extrabold leading-tight text-foreground"
+  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-0.5 text-sm font-semibold text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5 text-sm font-semibold text-primary"
   }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-[13px] font-semibold text-muted-foreground"
-  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 divide-y divide-border"
+    className: "mt-4 divide-y divide-border rounded-lg border border-border bg-card"
   }, invoiceList.map(iv => /*#__PURE__*/React.createElement("div", {
     key: iv.inv,
-    className: "flex items-center justify-between gap-3 py-3"
+    className: "px-4 py-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-start justify-between gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[15px] font-semibold text-foreground"
   }, iv.inv), /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
-  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1.5 flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: 'text-sm font-semibold ' + (iv.pickedUp ? 'text-muted-foreground' : 'text-primary')
+  }, tx(iv.pickedUp ? 'Picked up' : 'Ready for pickup')), iv.pickupDate && /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-medium text-muted-foreground"
+  }, iv.pickupDate))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
     onClick: () => setConfirmSkip(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -4321,18 +4419,10 @@ function AccountScreen({
   const [notif, setNotif] = useStateG(true);
   // Persisted so the invoice auth gate in DetailScreen can read the preference
   // without threading it through the router.
-  const [bioInvoices, setBioInvoices] = useStateG(() => {
-    try {
-      return localStorage.getItem('hobbyx_bio_invoices') !== '0';
-    } catch (e) {
-      return true;
-    }
-  });
+  const [bioInvoices, setBioInvoices] = useStateG(readBioInvoicesPref);
   const toggleBio = v => {
     setBioInvoices(v);
-    try {
-      localStorage.setItem('hobbyx_bio_invoices', v ? '1' : '0');
-    } catch (e) {}
+    writeBioInvoicesPref(v);
   };
   const [showPolicies, setShowPolicies] = useStateG(false);
   const [confirmSignOut, setConfirmSignOut] = useStateG(false);
