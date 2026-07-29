@@ -37,15 +37,46 @@ const PIPELINE = [{
 }, {
   key: 'complete',
   label: 'Ready for Pickup',
-  desc: 'Your order is ready for pickup at Mongkok Store.'
+  desc: 'Ready for Pickup at Mongkok Store'
 }, {
   key: 'pickedUp',
   label: 'Picked Up',
   desc: 'Your order has been picked up. Thanks for grading with HobbyX!'
 }];
 const STEP_INDEX = Object.fromEntries(PIPELINE.map((s, i) => [s.key, i]));
+const PARTIAL_PICKUP_STEP = {
+  key: 'partialPickup',
+  label: 'Partially picked up',
+  desc: 'Some invoices were picked up. The rest is ready at Mongkok Store.'
+};
 function isOrderPreDetail(order) {
-  return !!(order && order.status === 'arrived');
+  return !!(order && (order.status === 'arrived' || order.status === 'shipping'));
+}
+function getOrderDetailBlockedToastMessage(order) {
+  if (order && order.status === 'shipping') {
+    return tx('Your submission is in transit and has not been processed yet.');
+  }
+  if (order && order.status === 'arrived') {
+    return tx('Your submission has arrived at PSA but hasn\'t been processed yet.');
+  }
+  return tx('Details unavailable');
+}
+function preDetailStatusLabel(order) {
+  return order && order.status === 'shipping' ? tx('Shipping') : tx('Order Arrived');
+}
+function getInvoiceBiometricAvailability() {
+  const hasHardware = !!(window.PublicKeyCredential) && !window.__bioUnsupportedSim;
+  const isEnrolled = hasHardware;
+  return {
+    hasHardware,
+    isEnrolled,
+    canUseBiometrics: hasHardware && isEnrolled
+  };
+}
+function getInvoiceBiometricUnavailableToastMessage(availability) {
+  return availability.hasHardware
+    ? tx('Set up biometrics in your device settings first.')
+    : tx('This device doesn\'t support biometrics.');
 }
 function progressFor(key) {
   return STEP_INDEX[key] / (PIPELINE.length - 1);
@@ -462,6 +493,29 @@ const ORDERS = [{
     category: 'Football'
   }]
 }, {
+  id: 'o11',
+  name: 'Inbound Shipment',
+  category: 'Basketball',
+  service: 'Regular',
+  shipment: 'Jun 01 · 1st Shipment',
+  num: '26802011',
+  itemCount: 6,
+  estDate: '2027-02-01',
+  est: estRange('2027-02-01', '45 Business Days'),
+  estDays: '45 Business Days',
+  status: 'shipping',
+  group: 'progress',
+  arrived: '2026-06-01',
+  locked: true,
+  dates: {
+    arrived: 'Jun 01, 2026'
+  },
+  items: [{
+    cert: '159801011',
+    name: '2018 Panini Prizm Luka Doncic Rookie #280',
+    category: 'Basketball'
+  }]
+}, {
   id: 'c1',
   name: 'Super Express Order',
   category: 'Pokémon',
@@ -477,6 +531,19 @@ const ORDERS = [{
   arrived: '2026-04-17',
   completedOn: 'May 15, 2026',
   tracking: '381339995314',
+  partialPickup: false,
+  allInvoicesPickedUp: true,
+  invoices: [{
+    inv: 'H118204',
+    cards: 2,
+    pickedUp: true,
+    pickupDate: 'May 18, 2026'
+  }, {
+    inv: 'H118205',
+    cards: 1,
+    pickedUp: true,
+    pickupDate: 'May 18, 2026'
+  }],
   dates: {
     arrived: 'Apr 17, 2026',
     prep: 'Apr 20, 2026',
@@ -551,6 +618,14 @@ const ORDERS = [{
   arrived: '2026-05-18',
   completedOn: 'Jun 02, 2026',
   tracking: '381339774521',
+  partialPickup: false,
+  allInvoicesPickedUp: false,
+  invoices: [{
+    inv: 'H990001',
+    cards: 1,
+    pickedUp: false,
+    pickupDate: null
+  }],
   dates: {
     arrived: 'May 18, 2026',
     prep: 'May 20, 2026',
@@ -595,6 +670,14 @@ const ORDERS = [{
   arrived: '2026-04-05',
   completedOn: 'Apr 28, 2026',
   tracking: '381339118822',
+  partialPickup: false,
+  allInvoicesPickedUp: true,
+  invoices: [{
+    inv: 'H104882',
+    cards: 2,
+    pickedUp: true,
+    pickupDate: 'May 01, 2026'
+  }],
   dates: {
     arrived: 'Apr 05, 2026',
     prep: 'Apr 08, 2026',
@@ -635,6 +718,169 @@ const ORDERS = [{
       va: 'PRERELEASE',
       no: '#067'
     }
+  }]
+}, {
+  id: 'c4',
+  name: 'Value Plus Review',
+  category: 'Pokémon',
+  service: 'Value Plus',
+  shipment: 'May 20 · 1st Shipment',
+  turnaround: '60-90 Business Days',
+  num: '26688001',
+  itemCount: 8,
+  est: 'Aug 20, 2026',
+  estDays: '90 Business Days',
+  status: 'complete',
+  group: 'completed',
+  arrived: '2026-05-20',
+  completedOn: 'Jul 10, 2026',
+  partialPickup: true,
+  allInvoicesPickedUp: false,
+  invoices: [{
+    inv: 'H220001',
+    cards: 5,
+    pickedUp: true,
+    pickupDate: 'Jul 12, 2026'
+  }, {
+    inv: 'H220002',
+    cards: 3,
+    pickedUp: false,
+    pickupDate: null
+  }],
+  dates: {
+    arrived: 'May 20, 2026',
+    prep: 'May 22, 2026',
+    research: 'May 28, 2026',
+    grading: 'Jun 10, 2026',
+    assembly: 'Jun 25, 2026',
+    qa: 'Jul 02, 2026',
+    ready: 'Jul 05, 2026',
+    completing: 'Jul 08, 2026',
+    complete: 'Jul 10, 2026'
+  },
+  items: [{
+    cert: '88001001',
+    name: '2023 Pokémon SV Paldea Evolved Sprigatito #196',
+    category: 'Pokémon',
+    img: PKM(1),
+    grade: 'PSA 9',
+    sub: 'MINT 9'
+  }, {
+    cert: '88001002',
+    name: '2023 Pokémon SV Obsidian Flames Charizard ex #215',
+    category: 'Pokémon',
+    img: PKM(4),
+    grade: 'PSA 10',
+    sub: 'GEM MT 10'
+  }]
+}, {
+  id: 'c5',
+  name: 'Regular Order — Partial Pickup',
+  category: 'Basketball',
+  service: 'Regular',
+  shipment: 'Jun 01 · 2nd Shipment',
+  turnaround: '10-15 Business Days',
+  num: '26691002',
+  itemCount: 6,
+  est: 'Jun 20, 2026',
+  estDays: '15 Business Days',
+  status: 'complete',
+  group: 'completed',
+  arrived: '2026-06-01',
+  completedOn: 'Jun 18, 2026',
+  partialPickup: true,
+  allInvoicesPickedUp: false,
+  invoices: [{
+    inv: 'H330001',
+    cards: 2,
+    pickedUp: true,
+    pickupDate: 'Jun 20, 2026'
+  }, {
+    inv: 'H330002',
+    cards: 2,
+    pickedUp: true,
+    pickupDate: 'Jun 21, 2026'
+  }, {
+    inv: 'H330003',
+    cards: 2,
+    pickedUp: false,
+    pickupDate: null
+  }],
+  dates: {
+    arrived: 'Jun 01, 2026',
+    prep: 'Jun 03, 2026',
+    research: 'Jun 05, 2026',
+    grading: 'Jun 10, 2026',
+    assembly: 'Jun 14, 2026',
+    qa: 'Jun 16, 2026',
+    ready: 'Jun 17, 2026',
+    completing: 'Jun 18, 2026',
+    complete: 'Jun 18, 2026'
+  },
+  items: [{
+    cert: '91002001',
+    name: '2018 Panini Prizm Luka Dončić RC #280',
+    category: 'Basketball',
+    grade: 'PSA 10',
+    sub: 'GEM MT 10'
+  }, {
+    cert: '91002002',
+    name: '2019 Panini Prizm Zion Williamson RC #248',
+    category: 'Basketball',
+    grade: 'PSA 9',
+    sub: 'MINT 9'
+  }]
+}, {
+  id: 'c6',
+  name: 'Express Dual Invoice',
+  category: 'Football',
+  service: 'Super Express',
+  shipment: 'Jul 02 · 1st Shipment',
+  turnaround: '40-50 Business Days',
+  num: '26692003',
+  itemCount: 5,
+  est: 'Jul 15, 2026',
+  estDays: '10 Business Days',
+  status: 'complete',
+  group: 'completed',
+  arrived: '2026-07-02',
+  completedOn: 'Jul 12, 2026',
+  partialPickup: false,
+  allInvoicesPickedUp: false,
+  invoices: [{
+    inv: 'H440001',
+    cards: 3,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H440002',
+    cards: 2,
+    pickedUp: false,
+    pickupDate: null
+  }],
+  dates: {
+    arrived: 'Jul 02, 2026',
+    prep: 'Jul 04, 2026',
+    research: 'Jul 06, 2026',
+    grading: 'Jul 08, 2026',
+    assembly: 'Jul 10, 2026',
+    qa: 'Jul 11, 2026',
+    ready: 'Jul 11, 2026',
+    completing: 'Jul 12, 2026',
+    complete: 'Jul 12, 2026'
+  },
+  items: [{
+    cert: '92003001',
+    name: '2020 Panini Prizm Justin Herbert RC #325',
+    category: 'Football',
+    grade: 'PSA 10',
+    sub: 'GEM MT 10'
+  }, {
+    cert: '92003002',
+    name: '2018 Panini Prizm Lamar Jackson RC #215',
+    category: 'Football',
+    grade: 'PSA 9',
+    sub: 'MINT 9'
   }]
 }];
 
@@ -707,11 +953,74 @@ const NOTIFICATIONS = [{
   id: 'n3',
   icon: 'truck',
   title: 'Ready for Pickup',
-  body: 'Your order Super Express Order is ready for pickup.',
-  ship: 'August 24 - 1st Shipment',
+  body: 'Your invoice for Autograph Single — Rayquaza is ready for pickup.',
+  ship: 'Jun 05 · 1st Shipment',
   time: '3d ago',
   unread: false,
+  orderId: 'c3'
+}, {
+  id: 'n3b',
+  icon: 'truck',
+  title: 'Ready for Pickup',
+  body: 'Your order Express Dual Invoice is ready for pickup.',
+  ship: 'Jul 02 · 1st Shipment',
+  time: '12h ago',
+  unread: true,
+  orderId: 'c6'
+}, {
+  id: 'n5',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H118204 for your order Super Express has been collected.',
+  ship: 'May 26 · 2nd Shipment',
+  time: '1h ago',
+  unread: true,
   orderId: 'c1'
+}, {
+  id: 'n5b',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H118205 for your order Super Express has been collected.',
+  ship: 'May 26 · 2nd Shipment',
+  time: '1h ago',
+  unread: false,
+  orderId: 'c1'
+}, {
+  id: 'n6',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H104882 for your order Regular has been collected.',
+  ship: 'Apr 28 · 1st Shipment',
+  time: '2d ago',
+  unread: false,
+  orderId: 'c2'
+}, {
+  id: 'n7',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H220001 for your order Value Plus has been collected.',
+  ship: 'May 20 · 1st Shipment',
+  time: '4h ago',
+  unread: true,
+  orderId: 'c4'
+}, {
+  id: 'n8',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H330001 for your order Regular has been collected.',
+  ship: 'Jun 01 · 2nd Shipment',
+  time: '6h ago',
+  unread: false,
+  orderId: 'c5'
+}, {
+  id: 'n8b',
+  icon: 'check',
+  title: 'Invoice Collected',
+  body: 'Invoice H330002 for your order Regular has been collected.',
+  ship: 'Jun 01 · 2nd Shipment',
+  time: '5h ago',
+  unread: false,
+  orderId: 'c5'
 }, {
   id: 'n4',
   icon: 'check',
@@ -923,10 +1232,25 @@ const ZH = {
   'A final quality check is performed on every slab before it ships.': '每個封裝在寄出前都會進行最終品質檢查。',
   'Your grades are ready to be revealed.': '你的評級結果已可揭曉。',
   'Your order is ready for Grade Reveal.': '你的訂單已可進行評級揭曉。',
-  'Your order is ready for pickup at Mongkok Store.': '你的訂單已可在旺角店取貨。',
   'Picked Up': '已取貨',
   'Your order has been picked up. Thanks for grading with HobbyX!': '你的訂單已取貨。感謝你選擇 HobbyX 評級！',
   'Ready for Pickup at Mongkok Store': '可到旺角店取貨',
+  'Your invoice has been picked up.': '你的發票已取貨。',
+  '{{count}} remaining to collect at Mongkok Store': '尚有 {{count}} 張待取 · 旺角店',
+  '{{count}} invoices picked up. The rest is ready at Mongkok Store.': '{{count}} 張發票已取貨，其餘可到旺角店取。',
+  '1 invoice': '1 張發票',
+  '{{count}} invoices': '{{count}} 張發票',
+  'Invoice Collected': '發票已領取',
+  'Invoice H118204 for your order Super Express has been collected.': 'Super Express 訂單的發票 H118204 已領取。',
+  'Invoice H118205 for your order Super Express has been collected.': 'Super Express 訂單的發票 H118205 已領取。',
+  'Invoice H104882 for your order Regular has been collected.': 'Regular 訂單的發票 H104882 已領取。',
+  'Invoice H220001 for your order Value Plus has been collected.': 'Value Plus 訂單的發票 H220001 已領取。',
+  'Invoice H330001 for your order Regular has been collected.': 'Regular 訂單的發票 H330001 已領取。',
+  'Invoice H330002 for your order Regular has been collected.': 'Regular 訂單的發票 H330002 已領取。',
+  'Your invoice for Autograph Single — Rayquaza is ready for pickup.': 'Autograph Single — Rayquaza 的發票已可供取貨。',
+  'Your order Express Dual Invoice is ready for pickup.': 'Express Dual Invoice 訂單已可供取貨。',
+  '2 invoices picked up. The rest is ready at Mongkok Store.': '2 張發票已取貨，其餘可到旺角店取。',
+  'Express Dual Invoice': '特快雙發票訂單',
   'No orders ready for pickup yet': '目前沒有可供取回的訂單',
   'Graded cards ready for collection will appear here.': '已評級並可供領取的卡牌會在此顯示。',
   'System': '系統',
@@ -934,6 +1258,13 @@ const ZH = {
   'Your order is complete and on its way to you.': '你的訂單已完成，正在寄送途中。',
   'Login successful': '登入成功',
   'Details unavailable': '詳情暫不可用',
+  'Your submission has arrived at PSA but hasn\'t been processed yet.': '您的送評物品已抵達 PSA，但尚未開始處理。',
+  'Your submission is in transit and has not been processed yet.': '您的送評物品正在運送中，尚未開始處理。',
+  'This device doesn\'t support biometrics.': '此裝置不支援生物認證。',
+  'Set up biometrics in your device settings first.': '請先在裝置設定中設定生物認證。',
+  'Shipping': '運送中',
+  'We apologize for the delay with your order; PSA is working on it. Thank you for your patience.': '就您的訂單延誤，我們深感抱歉；PSA 正在處理中。感謝您的耐心等候。',
+  'Inbound Shipment': '運送中的送評',
   'Mark all read': '全部標為已讀',
   'Delete': '刪除',
   'Estimated Completion Date': '預計完成日期',
@@ -1129,6 +1460,7 @@ const ZH = {
   'Incorrect password. Please try again.': '密碼不正確。請再試一次。',
   // —— invoices: auth gate + biometrics ——
   'Invoices': '發票',
+  'Invoice': '發票',
   'Store invoice numbers for your items': '您物品對應的門店發票號碼',
   'Biometrics for Invoices': '發票生物認證',
   'Use {{method}} to unlock invoice numbers': '使用{{method}}解鎖發票號碼',
@@ -1413,6 +1745,80 @@ function txVars(s, vars) {
     out = out.split('{{' + key + '}}').join(vars[key]);
   });
   return out;
+}
+function getInvoicePickupSummary(invoices) {
+  const list = (invoices || []).filter((iv) => iv && iv.inv);
+  return {
+    total: list.length,
+    pickedUp: list.filter((iv) => iv.pickedUp).length
+  };
+}
+function isFullyPickedUp(order) {
+  if (!order || order.partialPickup) return false;
+  return order.status === 'pickedUp' || order.allInvoicesPickedUp;
+}
+function getDetailStepperPipeline(order) {
+  const base = PIPELINE.slice(0, -1);
+  if (order.partialPickup) {
+    return [...base, PARTIAL_PICKUP_STEP];
+  }
+  if (isFullyPickedUp(order)) {
+    return PIPELINE;
+  }
+  return base;
+}
+function resolveDetailStepIndex(order) {
+  const pipeline = getDetailStepperPipeline(order);
+  if (order.partialPickup || isFullyPickedUp(order)) {
+    return pipeline.length - 1;
+  }
+  const idx = STEP_INDEX[order.status];
+  if (idx == null) return 0;
+  return Math.min(idx, pipeline.length - 1);
+}
+function getLatestPickupDate(order) {
+  const dates = (order.invoices || []).filter((iv) => iv.pickedUp && iv.pickupDate).map((iv) => iv.pickupDate);
+  if (order.dates && order.dates.pickedUp) {
+    dates.push(order.dates.pickedUp);
+  }
+  return dates.length ? dates[dates.length - 1] : null;
+}
+function getDetailStepDate(order, step, stepIndex, currentIndex) {
+  if (stepIndex > currentIndex) return null;
+  if (step.key === 'arrived') return order.dates && order.dates.arrived || null;
+  if (step.key === 'completing') return order.dates && order.dates.completing || null;
+  if (step.key === 'pickedUp') {
+    if (order.partialPickup) return null;
+    return order.dates && order.dates.pickedUp || getLatestPickupDate(order);
+  }
+  return null;
+}
+function gradingStatusMessage(order) {
+  const {
+    total,
+    pickedUp
+  } = getInvoicePickupSummary(order.invoices);
+  if (order.partialPickup) {
+    return txVars('{{count}} remaining to collect at Mongkok Store', {
+      count: total - pickedUp
+    });
+  }
+  if (isFullyPickedUp(order) || order.status === 'pickedUp') {
+    if (total === 1) {
+      return tx('Your invoice has been picked up.');
+    }
+    return tx('All invoices for this order have been picked up.');
+  }
+  return tx('Ready for Pickup at Mongkok Store');
+}
+function invoiceSummaryLabel(count) {
+  if (count === 1) return tx('1 invoice');
+  return txVars('{{count}} invoices', {
+    count: count
+  });
+}
+function invoiceEntryTitle(count) {
+  return count === 1 ? tx('Invoice') : tx('Invoices');
 }
 function readBioInvoicesPref() {
   try {
@@ -2528,24 +2934,30 @@ function Tabs({
 function Stepper({
   order
 }) {
-  const current = STEP_INDEX[order.status];
-  const isComplete = current === PIPELINE.length - 1;
+  const pipeline = getDetailStepperPipeline(order);
+  const current = resolveDetailStepIndex(order);
+  const isComplete = current === pipeline.length - 1;
+  const terminalKey = pipeline[pipeline.length - 1].key;
+  const terminalComplete = isComplete && (terminalKey === 'pickedUp' || terminalKey === 'partialPickup');
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-1"
-  }, PIPELINE.map((s, i) => {
+  }, pipeline.map((s, i) => {
     const done = i < current || isComplete;
     const active = i === current && !isComplete;
     const future = i > current && !isComplete;
-    const last = i === PIPELINE.length - 1;
-    const date = order.dates && order.dates[s.key];
-    const showDate = (s.key === 'arrived' || s.key === 'completing') && i <= current && date;
+    const last = i === pipeline.length - 1;
+    const pickedUpTerminal = last && terminalKey === 'pickedUp' && terminalComplete;
+    const partialTerminal = last && terminalKey === 'partialPickup' && terminalComplete;
+    const date = getDetailStepDate(order, s, i, current);
+    const showDate = Boolean(date);
+    const stepDesc = active && !isComplete && (s.key === 'partialPickup' || s.key === 'complete' && order.partialPickup) ? gradingStatusMessage(order) : tx(s.desc);
     return /*#__PURE__*/React.createElement("div", {
       key: s.key,
       className: "grid grid-cols-[24px_1fr_auto] gap-x-3.5"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col items-center"
     }, /*#__PURE__*/React.createElement("div", {
-      className: 'flex h-6 w-6 items-center justify-center rounded-full ' + (done && last && isComplete ? 'bg-success text-white ring-4 ring-success/15' : done ? 'bg-foreground text-background' : active ? 'bg-primary text-primary-foreground ring-4 ring-primary/15' : 'border-2 border-border bg-card')
+      className: 'flex h-6 w-6 items-center justify-center rounded-full ' + (pickedUpTerminal ? 'bg-success text-white ring-4 ring-success/15' : partialTerminal ? 'bg-primary text-primary-foreground ring-4 ring-primary/15' : done ? 'bg-foreground text-background' : active ? 'bg-primary text-primary-foreground ring-4 ring-primary/15' : 'border-2 border-border bg-card')
     }, done && /*#__PURE__*/React.createElement("span", {
       className: "h-3.5 w-3.5"
     }, Icon.check), active && /*#__PURE__*/React.createElement("span", {
@@ -2558,11 +2970,11 @@ function Stepper({
     })), /*#__PURE__*/React.createElement("div", {
       className: "pb-5"
     }, /*#__PURE__*/React.createElement("div", {
-      className: 'text-[15px] ' + (last && isComplete ? 'font-bold text-success' : future ? 'font-medium text-muted-foreground' : 'font-semibold text-foreground')
+      className: 'text-[15px] ' + (pickedUpTerminal ? 'font-bold text-success' : partialTerminal ? 'font-bold text-primary' : future ? 'font-medium text-muted-foreground' : 'font-semibold text-foreground')
     }, tx(s.label)), active && !isComplete && /*#__PURE__*/React.createElement("div", {
       className: "mt-1 text-[13px] leading-snug text-muted-foreground"
-    }, tx(s.desc))), /*#__PURE__*/React.createElement("div", {
-      className: 'pt-1 text-[12px] font-medium whitespace-nowrap ' + (last && isComplete ? 'text-success' : 'text-muted-foreground')
+    }, stepDesc)), /*#__PURE__*/React.createElement("div", {
+      className: 'pt-1 text-[12px] font-medium whitespace-nowrap ' + (pickedUpTerminal ? 'text-success' : partialTerminal ? 'text-primary' : 'text-muted-foreground')
     }, showDate ? date : ''));
   }));
 }
@@ -3091,7 +3503,7 @@ function ListScreen({
     const preDetail = isOrderPreDetail(o);
     return /*#__PURE__*/React.createElement("button", {
       key: o.id,
-      onClick: () => preDetail ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
+      onClick: () => preDetail ? window.toast(getOrderDetailBlockedToastMessage(o), 'primary') : openOrder(o.id),
       className: 'group flex w-full items-center gap-4 rounded-lg border border-border bg-[#F5F6F8] p-3 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (preDetail ? 'active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
     }, o.group === 'completed' ? /*#__PURE__*/React.createElement(Slab, {
       item: o.items[0],
@@ -3118,7 +3530,7 @@ function ListScreen({
     }, /*#__PURE__*/React.createElement(Badge, {
       intent: "neutral",
       className: "shrink-0"
-    }, tx('Order Arrived'))), !preDetail && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
+    }, preDetailStatusLabel(o))), !preDetail && o.group !== 'completed' && /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex"
@@ -3196,36 +3608,8 @@ function DetailScreen({
   const bioBusy = bioPhase !== 'idle';
   const bioEnabled = readBioInvoicesPref();
   const bioMethod = bioMethodLabel();
-  // A grading order is billed across one or more invoices; the split is derived
-  // from the order id so the prototype shows stable numbers between renders.
-  const invoiceList = React.useMemo(function () {
-    let seed = 0;
-    const s = order.id || '';
-    for (let k = 0; k < s.length; k++) seed = seed * 31 + s.charCodeAt(k) >>> 0;
-    const rand = function () {
-      seed = seed * 1103515245 + 12345 >>> 0;
-      return seed / 4294967296;
-    };
-    const total = order.itemCount || 1;
-    const n = Math.min(4, Math.max(1, total), Math.floor(rand() * 4) + 1);
-    const cuts = [];
-    let remaining = total;
-    for (let i = 0; i < n - 1; i++) {
-      const share = Math.max(1, Math.min(remaining - (n - i - 1), Math.round(remaining / (n - i) * (0.5 + rand()))));
-      cuts.push(share);
-      remaining -= share;
-    }
-    cuts.push(remaining);
-    return cuts.map(function (cards, index) {
-      const pickedUp = index > 0 && rand() > 0.45;
-      return {
-        inv: 'H' + String(Math.floor(rand() * 900000) + 100000).padStart(6, '0'),
-        cards: cards,
-        pickedUp: pickedUp,
-        pickupDate: pickedUp ? 'Jun 12, 2026' : null
-      };
-    });
-  }, [order.id, order.itemCount]);
+  const invoiceList = order.invoices && order.invoices.length > 0 ? order.invoices : [];
+  const completionMessage = completed ? gradingStatusMessage(order) : '';
   const openInvoiceGate = () => {
     setGatePw('');
     setGatePwErr(false);
@@ -3320,20 +3704,19 @@ function DetailScreen({
     className: "mt-1.5 text-[15px] font-semibold text-primary"
   }, order.shipment || tx(order.category)), invoiceList.length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: openInvoiceGate,
-    className: "mt-4 flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-left shadow-sm transition active:scale-[.99] active:bg-accent/40"
+    className: "mt-4 flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-left shadow-sm transition active:scale-[.99] active:bg-accent/40",
+    "aria-label": invoiceEntryTitle(invoiceList.length) + ', ' + invoiceSummaryLabel(invoiceList.length)
   }, /*#__PURE__*/React.createElement("span", {
     className: "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-[18px] w-[18px]"
   }, Icon.doc)), /*#__PURE__*/React.createElement("span", {
     className: "flex-1 text-base font-semibold text-foreground"
-  }, tx('Invoices')), /*#__PURE__*/React.createElement("span", {
+  }, invoiceEntryTitle(invoiceList.length)), /*#__PURE__*/React.createElement("span", {
     className: "flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground"
   }, invoiceList.length), /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 text-muted-foreground"
-  }, Icon.chevR)), imagesReady && /*#__PURE__*/React.createElement("div", {
-    className: "mt-1.5 text-sm font-medium text-muted-foreground"
-  }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && /*#__PURE__*/React.createElement("div", {
+  }, Icon.chevR)), !completed && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 divide-x divide-border"
@@ -3346,7 +3729,7 @@ function DetailScreen({
   }, order.turnaround || turnaroundRange(order.estDays))), /*#__PURE__*/React.createElement("div", {
     className: "relative px-4 py-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex min-h-[26px] items-start pr-7 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
+    className: "min-h-[26px] pr-8 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
     style: {
       whiteSpace: 'pre-line'
     }
@@ -3357,21 +3740,30 @@ function DetailScreen({
     tabIndex: 0,
     "aria-label": tx('About this date'),
     onClick: () => setTip(v => !v),
-    className: "absolute right-1.5 top-1.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-muted active:bg-muted"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "block h-[18px] w-[18px] text-muted-foreground"
+    className: 'absolute right-1.5 top-1.5 flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-md transition-colors ' + (behind ? '' : 'hover:bg-muted active:bg-muted')
+  }, behind && /*#__PURE__*/React.createElement("span", {
+    className: "hx-eta-info-pulse",
+    "aria-hidden": true
+  }), /*#__PURE__*/React.createElement("span", {
+    className: 'relative block h-[18px] w-[18px] ' + (behind ? 'text-primary' : 'text-muted-foreground')
   }, Icon.help)), tip && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-20",
     onClick: () => setTip(false)
   }), /*#__PURE__*/React.createElement("div", {
     className: "absolute right-3 top-full z-30 mt-1.5 w-[228px] rounded-xl bg-neutral-800 p-3.5 text-[12px] font-medium leading-relaxed text-white shadow-xl dark:bg-neutral-700"
-  }, tx('Estimated completion date is calculated based your service level and its turnaround time in number of business days. The date will calculate once your order is entered into PSA Grading system and is not guaranteed.')))))), completed && /*#__PURE__*/React.createElement("div", {
+  }, tx('Estimated completion date is calculated based your service level and its turnaround time in number of business days. The date will calculate once your order is entered into PSA Grading system and is not guaranteed.')))))), behind && /*#__PURE__*/React.createElement("div", {
+    className: "hx-delay-banner mt-4 rounded-lg border px-4 py-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-medium leading-snug text-primary"
+  }, tx('We apologize for the delay with your order; PSA is working on it. Thank you for your patience.'))), completed && /*#__PURE__*/React.createElement("div", {
     className: "mt-4 flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, order.partialPickup ? /*#__PURE__*/React.createElement("span", {
+    className: "h-4 w-4 text-primary"
+  }, Icon.clock) : /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 text-success"
   }, Icon.check), /*#__PURE__*/React.createElement("span", {
-    className: "text-sm font-bold text-success"
-  }, tx('Ready for Pickup at Mongkok Store'))), imagesReady && /*#__PURE__*/React.createElement("div", {
+    className: 'text-sm font-bold ' + (order.partialPickup ? 'text-primary' : 'text-success')
+  }, completionMessage)), imagesReady && /*#__PURE__*/React.createElement("div", {
     className: "mt-6 flex w-full items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-base font-bold text-foreground"
@@ -3519,7 +3911,7 @@ function DetailScreen({
     onClick: e => e.stopPropagation()
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-lg font-extrabold leading-tight text-foreground"
-  }, tx('Invoices')), /*#__PURE__*/React.createElement("div", {
+  }, invoiceEntryTitle(invoiceList.length)), /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5 text-sm font-semibold text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-0.5 text-sm font-semibold text-primary"
@@ -3537,7 +3929,7 @@ function DetailScreen({
   }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 flex items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("span", {
-    className: 'text-sm font-semibold ' + (iv.pickedUp ? 'text-muted-foreground' : 'text-primary')
+    className: 'text-sm ' + (iv.pickedUp ? 'font-semibold text-badge-done' : 'font-medium text-foreground')
   }, tx(iv.pickedUp ? 'Picked up' : 'Ready for pickup')), iv.pickupDate && /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-medium text-muted-foreground"
   }, iv.pickupDate))))))), confirmSkip && /*#__PURE__*/React.createElement("div", {
@@ -4421,8 +4813,18 @@ function AccountScreen({
   // without threading it through the router.
   const [bioInvoices, setBioInvoices] = useStateG(readBioInvoicesPref);
   const toggleBio = v => {
-    setBioInvoices(v);
-    writeBioInvoicesPref(v);
+    if (!v) {
+      setBioInvoices(false);
+      writeBioInvoicesPref(false);
+      return;
+    }
+    const availability = getInvoiceBiometricAvailability();
+    if (!availability.canUseBiometrics) {
+      window.toast(getInvoiceBiometricUnavailableToastMessage(availability), 'primary');
+      return;
+    }
+    setBioInvoices(true);
+    writeBioInvoicesPref(true);
   };
   const [showPolicies, setShowPolicies] = useStateG(false);
   const [confirmSignOut, setConfirmSignOut] = useStateG(false);
@@ -4833,7 +5235,7 @@ function SkBlock({
   style
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: 'animate-pulse rounded bg-muted ' + (c || ''),
+    className: 'hx-sk-block rounded ' + (c || ''),
     style: style
   });
 }
@@ -6865,7 +7267,8 @@ function AuthFlow({
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "volkCredit": true,
   "accent": "#FF6400",
-  "radius": 11
+  "radius": 11,
+  "bioUnsupportedSim": false
 } /*EDITMODE-END*/;
 function hexToHsl(hex) {
   let r = parseInt(hex.slice(1, 3), 16) / 255,
@@ -6918,6 +7321,9 @@ function App() {
   const [scale, setScale] = useRootState(1);
   const PW = 390,
     PH = 820;
+  useRootEffect(() => {
+    window.__bioUnsupportedSim = !!t.bioUnsupportedSim;
+  }, [t.bioUnsupportedSim]);
   useRootEffect(() => {
     try {
       localStorage.setItem('hobbyx_appearance', appearancePref);
@@ -7054,6 +7460,12 @@ function App() {
     max: 18,
     unit: "px",
     onChange: v => setTweak('radius', v)
+  }), /*#__PURE__*/React.createElement(TweakSection, {
+    label: "Demo"
+  }), /*#__PURE__*/React.createElement(TweakToggle, {
+    label: "Simulate no biometrics",
+    value: t.bioUnsupportedSim,
+    onChange: v => setTweak('bioUnsupportedSim', v)
   })));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));

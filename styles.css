@@ -744,3 +744,38 @@
   justify-content:center; border-radius:9999px;
   background:hsl(var(--success) / .12); color:hsl(var(--success));
 }
+
+/* ===== Skeleton pulse (HMAP1-132) ===== */
+@keyframes hxSkeletonPulse{
+  0%, 100%{ opacity:1; }
+  50%{ opacity:.28; }
+}
+.hx-sk-block{
+  background-color:hsl(var(--input));
+  animation:hxSkeletonPulse 600ms ease-in-out infinite;
+}
+
+/* ===== Delay banner + ETA info pulse (HMAP1-136) ===== */
+:root{
+  --status-ready-bg:#FFF0E6;
+  --status-ready-fg:#FF6400;
+}
+.dark{
+  --status-ready-bg:rgba(255,100,0,.14);
+  --status-ready-fg:#FF6F0F;
+}
+.hx-delay-banner{
+  background:var(--status-ready-bg);
+  border-color:var(--status-ready-fg);
+  color:var(--status-ready-fg);
+}
+@keyframes hxEtaInfoPulse{
+  0%, 100%{ opacity:1; }
+  50%{ opacity:.35; }
+}
+.hx-eta-info-pulse{
+  position:absolute; inset:0; border-radius:.375rem;
+  background:var(--status-ready-bg);
+  animation:hxEtaInfoPulse 1.8s ease-in-out infinite;
+  pointer-events:none;
+}
