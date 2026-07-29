@@ -157,6 +157,12 @@ const ORDERS = [{
     cert: '159788540',
     name: '2024 One Piece OP-05 Monkey D. Luffy Leader Parallel',
     category: 'One Piece'
+  }],
+  invoices: [{
+    inv: 'H881001',
+    cards: 1,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o6',
@@ -237,6 +243,17 @@ const ORDERS = [{
       va: '',
       no: '#10'
     }
+  }],
+  invoices: [{
+    inv: 'H881201',
+    cards: 24,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H881202',
+    cards: 20,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o2',
@@ -292,6 +309,22 @@ const ORDERS = [{
     name: '1999 Pokémon Game Alakazam Holo #1',
     category: 'Pokémon',
     img: PKM(1)
+  }],
+  invoices: [{
+    inv: 'H881301',
+    cards: 40,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H881302',
+    cards: 35,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H881303',
+    cards: 28,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o7',
@@ -327,6 +360,17 @@ const ORDERS = [{
     name: '2002 Yu-Gi-Oh! LOB Red-Eyes Black Dragon',
     category: 'Yu-Gi-Oh!',
     img: YGO(74677422)
+  }],
+  invoices: [{
+    inv: 'H881401',
+    cards: 14,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H881402',
+    cards: 12,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o8',
@@ -365,6 +409,17 @@ const ORDERS = [{
     name: '1999 Pokémon Game Zapdos Holo #16',
     category: 'Pokémon',
     img: PKM(16)
+  }],
+  invoices: [{
+    inv: 'H881501',
+    cards: 32,
+    pickedUp: false,
+    pickupDate: null
+  }, {
+    inv: 'H881502',
+    cards: 28,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o5',
@@ -391,6 +446,12 @@ const ORDERS = [{
     cert: '159790020',
     name: '2003 Topps Chrome LeBron James Rookie #111',
     category: 'Basketball'
+  }],
+  invoices: [{
+    inv: 'H881601',
+    cards: 8,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o9',
@@ -444,6 +505,12 @@ const ORDERS = [{
       va: '',
       no: '#13'
     }
+  }],
+  invoices: [{
+    inv: 'H881701',
+    cards: 5,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o10',
@@ -468,6 +535,12 @@ const ORDERS = [{
     name: '2025 Weiss Schwarz Hatsune Miku SP Signed',
     category: 'Weiss Schwarz',
     img: 'assets/card-placeholder.png'
+  }],
+  invoices: [{
+    inv: 'H881801',
+    cards: 3,
+    pickedUp: false,
+    pickupDate: null
   }]
 }, {
   id: 'o4',
@@ -1478,6 +1551,8 @@ const ZH = {
   'Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.': '發票已啟用生物認證。你可隨時於「帳戶 → 發票生物認證」關閉。',
   'Tip: enable {{method}} for invoices in Account → Biometrics for Invoices, so you can skip typing your password.': '提示：於「帳戶 → 發票生物認證」啟用{{method}}，即可免除輸入密碼。',
   '{{method}} isn\'t available on this device. Continue with your password.': '此裝置無法使用{{method}}，請使用密碼繼續。',
+  'Use your account password to continue.': '請使用你的帳戶密碼繼續。',
+  'Fingerprint': '指紋',
   'Ready for pickup': '待取貨',
   'Picked up': '已取貨',
   'Pickup Ready': '可取貨',
@@ -1753,6 +1828,11 @@ function getInvoicePickupSummary(invoices) {
     pickedUp: list.filter((iv) => iv.pickedUp).length
   };
 }
+function shouldShowInvoiceRowStatus(order) {
+  if (!order) return false;
+  if (order.partialPickup) return true;
+  return order.status === 'complete' || order.status === 'pickedUp';
+}
 function isFullyPickedUp(order) {
   if (!order || order.partialPickup) return false;
   return order.status === 'pickedUp' || order.allInvoicesPickedUp;
@@ -1833,7 +1913,10 @@ function writeBioInvoicesPref(enabled) {
   } catch (e) {}
 }
 function bioMethodLabel() {
-  return tx('Face ID');
+  const ua = navigator.userAgent || '';
+  if (/Android/i.test(ua)) return tx('Fingerprint');
+  if (/iPhone|iPad|iPod/i.test(ua)) return tx('Face ID');
+  return tx('Fingerprint');
 }
 function useLang() {
   const [, force] = useI18nState(0);
@@ -2483,6 +2566,53 @@ function Button({
   return /*#__PURE__*/React.createElement("button", _extends({
     className: base + ' ' + variants[variant] + ' ' + sizes[size] + ' ' + className
   }, props), children);
+}
+
+/** Bottom-anchored sheet — matches app BottomSheet (handle + full-width card). */
+function BottomSheet({
+  open,
+  onClose,
+  children,
+  className = '',
+  busy = false
+}) {
+  if (!open) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-40 flex items-end bg-black/50",
+    onClick: () => {
+      if (!busy) onClose();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: 'relative w-full rounded-t-2xl bg-card px-5 pb-8 pt-2 shadow-xl ' + className,
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto mb-3 h-1 w-9 shrink-0 rounded-full bg-border"
+  }), children));
+}
+
+function GatePasswordInput({
+  value,
+  onChange,
+  placeholder,
+  hasError
+}) {
+  const [show, setShow] = useStateG(false);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative flex items-center"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: show ? 'text' : 'password',
+    value: value,
+    onChange: e => onChange(e.target.value),
+    placeholder: placeholder,
+    className: 'h-11 w-full rounded-md border bg-card px-3.5 text-[15px] font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 pr-11 ' + (hasError ? 'border-red-400' : 'border-input')
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    tabIndex: -1,
+    onClick: () => setShow(s => !s),
+    className: "absolute right-2 inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "h-[18px] w-[18px]"
+  }, show ? Icon.eyeOff : Icon.eye)));
 }
 
 /* Icon button (round, ghost) */
@@ -3274,7 +3404,7 @@ function Menu({
     onClick: () => onPick(it.key),
     className: "flex w-full items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-2 text-sm font-medium text-popover-foreground hover:bg-accent"
   }, translate ? tx(it.label) : it.label, current === it.key && /*#__PURE__*/React.createElement("span", {
-    className: "h-4 w-4 shrink-0 text-primary"
+    className: "inline-flex h-5 w-4 shrink-0 items-center justify-center text-primary"
   }, Icon.check))));
 }
 function FilterBtn({
@@ -3604,16 +3734,23 @@ function DetailScreen({
   const [gatePw, setGatePw] = useStateG('');
   const [gatePwErr, setGatePwErr] = useStateG(false);
   const [bioPhase, setBioPhase] = useStateG('idle');
-  const [bioError, setBioError] = useStateG(false);
+  const [bioLastError, setBioLastError] = useStateG(null);
+  const [bioAttemptCount, setBioAttemptCount] = useStateG(0);
+  const [bioPasswordOnly, setBioPasswordOnly] = useStateG(false);
   const bioBusy = bioPhase !== 'idle';
   const bioEnabled = readBioInvoicesPref();
+  const bioAvailability = getInvoiceBiometricAvailability();
+  const canUseBiometrics = bioAvailability.canUseBiometrics;
+  const showBiometricButton = canUseBiometrics && bioEnabled && !bioPasswordOnly;
   const bioMethod = bioMethodLabel();
   const invoiceList = order.invoices && order.invoices.length > 0 ? order.invoices : [];
   const completionMessage = completed ? gradingStatusMessage(order) : '';
   const openInvoiceGate = () => {
     setGatePw('');
     setGatePwErr(false);
-    setBioError(false);
+    setBioLastError(null);
+    setBioAttemptCount(0);
+    setBioPasswordOnly(false);
     setShowAuthGate(true);
   };
   const unlockInvoices = () => {
@@ -3626,7 +3763,8 @@ function DetailScreen({
     } else setGatePwErr(true);
   };
   const tryBiometrics = () => {
-    setBioError(false);
+    if (bioPasswordOnly) return;
+    setBioLastError(null);
     setBioPhase('scanning');
     setTimeout(() => {
       const ok = Math.random() > 0.15;
@@ -3636,7 +3774,16 @@ function DetailScreen({
         if (ok) {
           unlockInvoices();
         } else {
-          setBioError(true);
+          const nextAttempt = bioAttemptCount + 1;
+          setBioAttemptCount(nextAttempt);
+          if (nextAttempt >= 3) {
+            setBioPasswordOnly(true);
+            setBioLastError(tx('Use your account password to continue.'));
+          } else {
+            setBioLastError(txVars('{{method}} didn\'t match. Try again.', {
+              method: bioMethod
+            }));
+          }
         }
       }, ok ? 700 : 900);
     }, 1100);
@@ -3651,10 +3798,10 @@ function DetailScreen({
       bioAutoTriggeredRef.current = false;
       return;
     }
-    if (!bioEnabled || bioBusy || bioAutoTriggeredRef.current) return;
+    if (!bioEnabled || bioBusy || bioAutoTriggeredRef.current || !canUseBiometrics || bioPasswordOnly) return;
     bioAutoTriggeredRef.current = true;
     tryBiometrics();
-  }, [showAuthGate, bioEnabled, bioBusy]);
+  }, [showAuthGate, bioEnabled, bioBusy, canUseBiometrics, bioPasswordOnly]);
   // View all is always available once images are ready. If grades aren't revealed
   // yet, confirm that the user wants to skip the reveal before jumping to the list.
   const handleViewAll = () => {
@@ -3685,7 +3832,7 @@ function DetailScreen({
     if (el) setShowHdrTitle(el.scrollTop > 30);
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "flex h-full flex-col bg-background"
+    className: "relative flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
     title: /*#__PURE__*/React.createElement("span", {
@@ -3824,64 +3971,65 @@ function DetailScreen({
     className: "mb-3 text-base font-bold text-foreground"
   }, tx('Status')), /*#__PURE__*/React.createElement(Stepper, {
     order: order
-  }))), showAuthGate && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-40 flex items-end justify-center bg-black/50 p-4",
-    onClick: () => {
-      if (!bioBusy) setShowAuthGate(false);
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[400px] rounded-2xl bg-card p-5 shadow-xl",
-    onClick: e => e.stopPropagation()
+  }))), showAuthGate && /*#__PURE__*/React.createElement(BottomSheet, {
+    open: showAuthGate,
+    busy: bioBusy,
+    onClose: () => setShowAuthGate(false)
   }, /*#__PURE__*/React.createElement("div", {
     className: "mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground"
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-5 w-5"
   }, Icon.lock)), /*#__PURE__*/React.createElement("p", {
-    className: "mt-3 text-center text-[13px] font-medium text-muted-foreground"
-  }, tx('Enter your account password to continue.')), bioEnabled && /*#__PURE__*/React.createElement("button", {
+    className: "mt-2 text-center text-sm font-medium text-muted-foreground"
+  }, tx('Enter your account password to continue.')), showBiometricButton && /*#__PURE__*/React.createElement(Button, {
+    variant: "default",
+    className: "mt-4 h-11 w-full",
     onClick: tryBiometrics,
-    disabled: bioBusy,
-    className: "mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[.99] disabled:opacity-60"
+    disabled: bioBusy
   }, /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4"
   }, Icon.fingerprint), txVars('Use {{method}}', {
     method: bioMethod
-  })), bioEnabled && bioError && /*#__PURE__*/React.createElement("div", {
-    className: "mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "h-3.5 w-3.5"
-  }, Icon.close), txVars('{{method}} didn\'t match. Try again.', {
-    method: bioMethod
-  })), /*#__PURE__*/React.createElement("div", {
+  })), bioLastError && /*#__PURE__*/React.createElement("p", {
+    className: "mt-1 text-center text-xs font-semibold text-red-500"
+  }, bioLastError), /*#__PURE__*/React.createElement("div", {
     className: "mt-4"
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "password",
+  }, /*#__PURE__*/React.createElement(GatePasswordInput, {
     value: gatePw,
-    onChange: e => {
-      setGatePw(e.target.value);
+    onChange: value => {
+      setGatePw(value);
       setGatePwErr(false);
     },
     placeholder: tx('Password'),
-    className: 'h-11 w-full rounded-md border bg-background px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none ' + (gatePwErr ? 'border-red-400' : 'border-input')
-  }), gatePwErr && /*#__PURE__*/React.createElement("div", {
+    hasError: gatePwErr
+  }), gatePwErr && /*#__PURE__*/React.createElement("p", {
     className: "mt-1.5 text-xs font-semibold text-red-500"
-  }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement("button", {
-    onClick: submitGatePw,
-    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent"
-  }, tx('Continue')), bioEnabled ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
-  }, tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.')) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
-    className: "mt-4 text-center text-[12px] font-medium leading-relaxed text-muted-foreground"
+  }, tx('Incorrect password. Try again.'))), /*#__PURE__*/React.createElement(Button, {
+    variant: "default",
+    size: "lg",
+    className: "mt-2 w-full",
+    onClick: submitGatePw
+  }, tx('Continue')), /*#__PURE__*/React.createElement("div", {
+    className: "mt-6 flex flex-col gap-2"
+  }, bioEnabled && canUseBiometrics ? /*#__PURE__*/React.createElement("p", {
+    className: "text-center text-xs font-medium leading-relaxed text-muted-foreground"
+  }, tx('Biometrics are enabled for invoices. You can turn this off anytime in Account → Biometrics for Invoices.')) : !canUseBiometrics ? /*#__PURE__*/React.createElement("p", {
+    className: "text-center text-xs font-medium leading-relaxed text-muted-foreground"
+  }, txVars('{{method}} isn\'t available on this device. Continue with your password.', {
+    method: bioMethod
+  })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "text-center text-xs font-medium leading-relaxed text-muted-foreground"
   }, txVars('Tip: enable {{method}} for invoices in Account → Biometrics for Invoices, so you can skip typing your password.', {
     method: bioMethod
-  })), /*#__PURE__*/React.createElement("button", {
+  })), /*#__PURE__*/React.createElement(Button, {
+    variant: "outline",
+    className: "h-11 w-full",
     onClick: enableBiometricsFromGate,
-    disabled: bioBusy,
-    className: "mt-3 flex h-11 w-full items-center justify-center rounded-md border border-input text-sm font-bold text-foreground transition active:scale-[.99] hover:bg-accent disabled:opacity-60"
+    disabled: bioBusy
   }, txVars('Enable {{method}} for invoices', {
     method: bioMethod
   })))), bioPhase !== 'idle' && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm",
+    className: "absolute inset-0 z-50 flex items-center justify-center rounded-t-2xl bg-black/25 backdrop-blur-sm",
     style: {
       animation: 'faceScanFade .25s ease'
     }
@@ -3926,9 +4074,9 @@ function DetailScreen({
     className: "text-[15px] font-semibold text-foreground"
   }, iv.inv), /*#__PURE__*/React.createElement("span", {
     className: "whitespace-nowrap text-sm font-medium text-muted-foreground"
-  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))), /*#__PURE__*/React.createElement("div", {
+  }, iv.cards, " ", tx(iv.cards === 1 ? 'item' : 'items'))), (shouldShowInvoiceRowStatus(order) || iv.pickupDate) && /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 flex items-center justify-between gap-3"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, shouldShowInvoiceRowStatus(order) && /*#__PURE__*/React.createElement("span", {
     className: 'text-sm ' + (iv.pickedUp ? 'font-semibold text-badge-done' : 'font-medium text-foreground')
   }, tx(iv.pickedUp ? 'Picked up' : 'Ready for pickup')), iv.pickupDate && /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-medium text-muted-foreground"
