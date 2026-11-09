@@ -49,7 +49,7 @@
 /* END USAGE */
 
 (() => {
-  const STATE_FILE = '.image-slots.state.json';
+  const STATE_FILE = 'assets/image-slots.json';
   // 2× a ~600px slot in a 1920-wide deck — retina-sharp without making the
   // sidecar enormous. A 1200px WebP at q=0.85 is ~150-300KB.
   const MAX_DIM = 1200;
@@ -75,8 +75,8 @@
 
   function load() {
     if (loadP) return loadP;
-    loadP = fetch(STATE_FILE)
-      .then((r) => (r.ok ? r.json() : null))
+    // Static export: slot data ships as assets/image-slots-data.js (works over file:// and http); fall back to fetch otherwise.
+    loadP = (window.__IMAGE_SLOTS__ ? Promise.resolve(window.__IMAGE_SLOTS__) : fetch(STATE_FILE).then((r) => (r.ok ? r.json() : null)))
       .then((j) => {
         // Merge: sidecar loses to any in-memory change that raced ahead of
         // the fetch (drop or clear) so neither is clobbered by hydration.
@@ -602,7 +602,7 @@
       // data:image/ URLs from it. The `src` attribute is author-controlled
       // (Claude wrote it into the HTML) so it passes through unchanged.
       let stored = this.id ? getSlot(this.id) : this._local;
-      if (stored && stored.u && !/^data:image\//i.test(stored.u)) stored = null;
+      if (stored && stored.u && !/^(data:image\/|assets\/)/i.test(stored.u)) stored = null;
       const srcAttr = this.getAttribute('src') || '';
       this._userUrl = (stored && stored.u) || null;
       const url = this._userUrl || srcAttr;
