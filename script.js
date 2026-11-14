@@ -814,19 +814,22 @@ const ORDERS = [
     centering: '9.5',
     corners: '9.5',
     edges: '9',
-    surface: '9.5'
+    surface: '9.5',
+    auto: '9'
   }), bgsItem('700100062', '2022 Panini Mosaic', 'Chet Holmgren', {
     overall: '9',
     centering: '9',
     corners: '9',
     edges: '9',
-    surface: '9.5'
+    surface: '9.5',
+    auto: '10'
   }), bgsItem('700100063', '2021 Panini Prizm', 'Jalen Green', {
     overall: '10',
     centering: '10',
     corners: '10',
     edges: '9.5',
-    surface: '10'
+    surface: '10',
+    auto: '10'
   })]
 }, {
   id: 'b2',
@@ -862,13 +865,15 @@ const ORDERS = [
     centering: '9',
     corners: '9',
     edges: '9',
-    surface: '9.5'
+    surface: '9.5',
+    auto: '9'
   }), bgsItem('700100012', '2021 Panini Select', 'Tyrese Haliburton', {
     overall: '8.5',
     centering: '9',
     corners: '8.5',
     edges: '8.5',
-    surface: '9'
+    surface: '9',
+    auto: '9'
   })]
 }, {
   id: 'b3',
@@ -898,13 +903,15 @@ const ORDERS = [
     centering: '10',
     corners: '10',
     edges: '10',
-    surface: '10'
+    surface: '10',
+    auto: '10'
   }), bgsItem('700100021', '2020 Panini Prizm', 'Tyrese Maxey', {
     overall: '9',
     centering: '9.5',
     corners: '9',
     edges: '9',
-    surface: '9'
+    surface: '9',
+    auto: '9'
   })]
 },
 // CGC (PSA-shaped; CGC early statuses are list-only; invoice number is the primary identity)
@@ -1213,6 +1220,7 @@ function statusOptionsFor(grader, tab) {
   };
   if (grader === 'BGS') return mk(fromPipe(BGS_PIPELINE));
   if (grader === 'CGC') return mk(fromPipe(CGC_PIPELINE));
+  if (grader === 'GEA') return mk([]); // GEA: no orders / statuses defined yet
   return done ? COMPLETED_STATUS_FILTERS : STATUS_FILTERS; // All graders: the full set
 }
 const NOTIFICATIONS = [{
@@ -1344,7 +1352,7 @@ const EARLY_STATUSES = {
 function isOrderPreDetail(order) {
   return !!(order && EARLY_STATUSES[order.status]);
 }
-const GRADERS_LIST = ['PSA', 'BGS', 'CGC'];
+const GRADERS_LIST = ['PSA', 'BGS', 'CGC', 'GEA'];
 function graderOf(o) {
   return o && o.grader || 'PSA';
 }
@@ -1805,6 +1813,12 @@ function setLang(l) {
    Characters identical in both scripts are omitted (left unchanged). */
 
 Object.assign(ZH, {
+  'Soon': '即將推出',
+  'Coming soon': '即將推出',
+  'Pending': '待定',
+  'Card Grade': '卡片評級',
+  'Grades will be shown once they are ready.': '評級完成後將顯示於此。',
+  'Grades and images will be shown once they are ready.': '評級及圖片完成後將顯示於此。',
   'All graders': '全部評級公司',
   'Filters': '篩選',
   'Reset': '重設',
@@ -3389,7 +3403,8 @@ const TABS_WITH_COUNTS = TABS.map(t => ({
 const GRADER_TAG_CLS = {
   PSA: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
   BGS: 'bg-violet-500/10 text-violet-700 dark:text-violet-300',
-  CGC: 'bg-teal-500/10 text-teal-700 dark:text-teal-300'
+  CGC: 'bg-teal-500/10 text-teal-700 dark:text-teal-300',
+  GEA: 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
 };
 function GraderTag({
   g
@@ -3398,23 +3413,189 @@ function GraderTag({
     className: 'inline-flex h-[18px] shrink-0 items-center rounded-[5px] px-1.5 text-[10.5px] font-extrabold tracking-wide ' + GRADER_TAG_CLS[g]
   }, g);
 }
+/* small brand mark in each category chip (GEA mark) */
+const GRADER_LOGO = {
+  PSA: {
+    src: 'assets/grader-psa.png',
+    size: {
+      width: 24,
+      height: 'auto'
+    }
+  },
+  BGS: {
+    src: 'assets/grader-bgs.png',
+    size: {
+      height: 14,
+      width: 'auto'
+    }
+  },
+  CGC: {
+    src: 'assets/grader-cgc.png',
+    size: {
+      height: 14,
+      width: 'auto'
+    }
+  },
+  GEA: {
+    src: 'assets/grader-gea.png',
+    size: {
+      width: 26,
+      height: 'auto'
+    }
+  }
+};
+/* categories that are announced but not available yet: shown disabled, pinned last, not reorderable */
+const GRADER_SOON = {
+  GEA: true
+};
+const pinSoon = arr => [...arr.filter(k => !GRADER_SOON[k]), ...arr.filter(k => GRADER_SOON[k])];
+const GRADER_ORDER_KEY = 'hobbyx_grader_order';
+const GRADER_DEFAULT_ORDER = ['PSA', 'BGS', 'CGC', 'GEA'];
+/* Category row. Long-press (450ms) a category, then drag sideways to reorder; the order is remembered. */
 function GraderFilter({
   value,
   onChange
 }) {
+  const [order, setOrder] = React.useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(GRADER_ORDER_KEY));
+      if (Array.isArray(s) && s.length === GRADER_DEFAULT_ORDER.length && GRADER_DEFAULT_ORDER.every(k => s.includes(k))) return pinSoon(s);
+    } catch (e) {}
+    return GRADER_DEFAULT_ORDER;
+  });
+  const [dragKey, setDragKey] = React.useState(null);
+  const rowRef = React.useRef(null);
+  const timer = React.useRef(null);
+  const st = React.useRef({
+    k: null,
+    active: false
+  });
+  const orderRef = React.useRef(order);
+  orderRef.current = order;
+  const justDragged = React.useRef(false);
+  React.useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return undefined;
+    const block = e => {
+      if (st.current.active) e.preventDefault();
+    }; // stop the page scrolling while a chip is being dragged
+    el.addEventListener('touchmove', block, {
+      passive: false
+    });
+    return () => {
+      el.removeEventListener('touchmove', block);
+      clearTimeout(timer.current);
+    };
+  }, []);
+  const end = e => {
+    clearTimeout(timer.current);
+    const s = st.current;
+    if (s.active) {
+      try {
+        localStorage.setItem(GRADER_ORDER_KEY, JSON.stringify(orderRef.current));
+      } catch (err) {}
+      justDragged.current = true;
+      setTimeout(() => {
+        justDragged.current = false;
+      }, 0);
+      try {
+        rowRef.current.releasePointerCapture(s.id);
+      } catch (err) {}
+    }
+    st.current = {
+      k: null,
+      active: false
+    };
+    setDragKey(null);
+  };
+  const down = (e, k) => {
+    if (GRADER_SOON[k] || e.pointerType === 'mouse' && e.button !== 0) return;
+    st.current = {
+      k,
+      active: false,
+      x: e.clientX,
+      y: e.clientY,
+      id: e.pointerId
+    };
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      st.current.active = true;
+      setDragKey(k);
+      try {
+        navigator.vibrate && navigator.vibrate(12);
+      } catch (err) {}
+      try {
+        rowRef.current.setPointerCapture(st.current.id);
+      } catch (err) {}
+    }, 450);
+  };
+  const move = e => {
+    const s = st.current;
+    if (!s.k) return;
+    if (!s.active) {
+      if (Math.hypot(e.clientX - s.x, e.clientY - s.y) > 8) {
+        clearTimeout(timer.current);
+        st.current = {
+          k: null,
+          active: false
+        };
+      } // moved before the hold finished: not a reorder
+      return;
+    }
+    const cur = orderRef.current;
+    const kids = [...rowRef.current.children];
+    const others = cur.map((key, i) => ({
+      key,
+      i
+    })).filter(o => o.key !== s.k);
+    const target = others.filter(o => {
+      const r = kids[o.i].getBoundingClientRect();
+      return e.clientX > r.left + r.width / 2;
+    }).length;
+    if (target !== cur.indexOf(s.k)) {
+      const next = others.map(o => o.key);
+      next.splice(target, 0, s.k);
+      setOrder(pinSoon(next));
+    }
+  };
   return /*#__PURE__*/React.createElement("div", {
+    ref: rowRef,
     role: "radiogroup",
     "aria-label": tx('Grading company'),
-    className: "mb-2.5 flex gap-1.5"
-  }, [['all', tx('All')], ['PSA', 'PSA'], ['BGS', 'BGS'], ['CGC', 'CGC']].map(([k, l]) => {
-    const sel = value === k;
+    onPointerMove: move,
+    onPointerUp: end,
+    onPointerCancel: end,
+    onContextMenu: e => e.preventDefault(),
+    style: {
+      touchAction: dragKey ? 'none' : 'pan-y',
+      WebkitTouchCallout: 'none'
+    },
+    className: "mb-2.5 flex select-none gap-1.5"
+  }, order.map(k => {
+    const sel = value === k,
+      lifted = dragKey === k,
+      soon = !!GRADER_SOON[k];
     return /*#__PURE__*/React.createElement("button", {
       key: k,
       role: "radio",
       "aria-checked": sel,
-      onClick: () => onChange(sel && k !== 'all' ? 'all' : k),
-      className: 'h-8 flex-1 rounded-full border text-[13px] font-bold transition-colors ' + (sel ? 'border-foreground bg-foreground text-background' : 'border-border bg-background text-muted-foreground hover:text-foreground')
-    }, l);
+      disabled: soon,
+      onPointerDown: e => down(e, k),
+      onClick: () => {
+        if (!justDragged.current) onChange(k);
+      },
+      className: 'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border text-[13px] font-bold transition-[transform,box-shadow,colors] duration-150 ' + (soon ? 'cursor-not-allowed border-border bg-muted/50 text-muted-foreground opacity-50 grayscale ' : sel ? 'border-primary bg-primary text-primary-foreground ' : lifted ? 'border-primary bg-background text-foreground ' : 'border-border bg-background text-muted-foreground hover:text-foreground ') + (lifted ? 'z-10 scale-[1.12] opacity-100 shadow-xl ring-2 ring-primary/60 ring-offset-2 ring-offset-background' : dragKey && !soon ? 'chip-wiggle opacity-60' : '')
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "flex h-5 min-w-[20px] items-center justify-center rounded bg-white px-[3px]"
+    }, /*#__PURE__*/React.createElement("img", {
+      src: GRADER_LOGO[k].src,
+      alt: "",
+      draggable: false,
+      style: {
+        ...GRADER_LOGO[k].size,
+        pointerEvents: 'none'
+      }
+    })), k);
   }));
 }
 
@@ -3487,8 +3668,21 @@ function ListScreen({
   const tab = tabProp;
   const [q, setQ] = useStateG('');
   const [sort, setSort] = useStateG('newest');
-  const [statusF, setStatusF] = useStateG('all');
-  const [graderF, setGraderF] = useStateG('all');
+  // The selected category (and status filter) survive opening an order and coming back: kept at module level, not in this screen's state
+  const _memo = window.__gradingFilterMemo = window.__gradingFilterMemo || {
+    grader: 'PSA',
+    status: 'all'
+  };
+  const [statusF, _setStatusF] = useStateG(_memo.status);
+  const setStatusF = v => {
+    _memo.status = v;
+    _setStatusF(v);
+  };
+  const [graderF, _setGraderF] = useStateG(_memo.grader); // no "All" category: PSA is the default tab
+  const setGraderF = v => {
+    _memo.grader = v;
+    _setGraderF(v);
+  };
   const [menu, setMenu] = useStateG(null);
   const [tip, setTip] = useStateG(null);
   // collapsing search/filter bar: hide while scrolling down the rows, reveal on scroll up
@@ -3545,7 +3739,7 @@ function ListScreen({
     return l === statusF;
   });
   rows = rows.slice().sort((a, b) => sort === 'newest' ? Date.parse(b.arrived) - Date.parse(a.arrived) : Date.parse(a.arrived) - Date.parse(b.arrived));
-  const filtered = q.trim() || statusF !== 'all' || graderF !== 'all';
+  const filtered = q.trim() || statusF !== 'all';
   const clearFilters = () => {
     setQ('');
     setSort('newest');
@@ -3557,7 +3751,7 @@ function ListScreen({
   React.useEffect(() => {
     if (statusF !== 'all' && !statusOptionsFor(graderF, tab).some(f => f.key === statusF)) setStatusF('all');
   }, [graderF, tab]);
-  const showClear = !!q.trim() || sort !== 'newest' || statusF !== 'all' || graderF !== 'all';
+  const showClear = !!q.trim() || sort !== 'newest' || statusF !== 'all';
 
   // ---- Sample 2: one "Filters" button + a bottom sheet with full-word options (no truncated dropdowns) ----
   const statusOpts = statusOptionsFor(graderF, tab).filter(f => f.key !== 'all');
@@ -3717,11 +3911,14 @@ function ListScreen({
     style: {
       maxHeight: hideBar ? 0 : 320,
       opacity: hideBar ? 0 : 1,
+      marginTop: -10,
+      position: 'relative',
+      zIndex: 5,
       overflow: menu ? 'visible' : 'hidden',
       transition: 'max-height .3s ease, opacity .25s ease'
     }
   }, sample !== 'S2' && sample !== 'S3' && sample !== 'S4' && sample !== 'S5' && /*#__PURE__*/React.createElement("div", {
-    className: "px-5 pb-3"
+    className: "px-5 pb-3 pt-2.5"
   }, /*#__PURE__*/React.createElement(GraderFilter, {
     value: graderF,
     onChange: setGraderF
@@ -3834,6 +4031,35 @@ function ListScreen({
     const pct = Math.round(progressForOrder(o) * 100);
     const oReady = !o.itemsPending && (o.items.some(it => it.grade || it.img || it.slab) || graderOf(o) !== 'PSA' && !isOrderPreDetail(o));
     const preDetail = isOrderPreDetail(o);
+    if (graderOf(o) === 'BGS') {
+      const done = o.group === 'completed';
+      return /*#__PURE__*/React.createElement("button", {
+        key: o.id,
+        onClick: () => preDetail ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
+        className: 'group flex w-full items-center gap-3 rounded-lg border border-border bg-[#F5F6F8] p-4 text-left transition-colors dark:bg-card ' + (highlightId === o.id ? 'notif-glow ' : '') + (preDetail ? 'border-dashed active:scale-[.995]' : 'hover:border-foreground/15 hover:bg-accent/40 active:scale-[.995]')
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "min-w-0 flex-1"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "truncate text-[15px] font-semibold leading-tight text-foreground"
+      }, tx(o.service)), /*#__PURE__*/React.createElement("div", {
+        className: "mt-1 text-[13px] font-medium text-muted-foreground"
+      }, (o.shipment || tx(o.category)) + ' · ' + o.itemCount + ' ' + tx(o.itemCount === 1 ? 'item' : 'items')), /*#__PURE__*/React.createElement("div", {
+        className: "mt-2.5 flex"
+      }, /*#__PURE__*/React.createElement(Badge, {
+        intent: preDetail ? 'neutral' : statusIntentFor(o),
+        className: "shrink-0"
+      }, tx(statusLabelOf(o)))), !preDetail && !done && /*#__PURE__*/React.createElement("div", {
+        className: "mt-2.5"
+      }, /*#__PURE__*/React.createElement(Progress, {
+        value: pct
+      })), /*#__PURE__*/React.createElement("div", {
+        className: "mt-3 flex items-center justify-between gap-3 border-t border-border pt-2.5 text-[13px] font-medium text-muted-foreground"
+      }, preDetail ? /*#__PURE__*/React.createElement("span", null, tx('Details open once your order is processing.')) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, done ? tx('Completion date') : tx(o.listDateLabel || 'Estimated completion')), /*#__PURE__*/React.createElement("span", {
+        className: "font-semibold text-foreground"
+      }, done ? o.completedOn : o.listDate || o.est)))), /*#__PURE__*/React.createElement("span", {
+        className: 'h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 ' + (preDetail ? 'invisible' : '')
+      }, Icon.chevR));
+    }
     return /*#__PURE__*/React.createElement("button", {
       key: o.id,
       onClick: () => preDetail ? window.toast(tx('Details unavailable'), 'primary') : openOrder(o.id),
@@ -3882,7 +4108,7 @@ function ListScreen({
       className: "mt-2"
     }, /*#__PURE__*/React.createElement(Progress, {
       value: pct
-    })), /*#__PURE__*/React.createElement("div", {
+    })), graderOf(o) === 'CGC' ? null : /*#__PURE__*/React.createElement("div", {
       className: "mt-2.5 text-[13px] font-medium leading-snug text-muted-foreground"
     }, tx(o.listDateLabel || 'Estimated completion'), ": ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-foreground"
@@ -3925,6 +4151,15 @@ function bgsSubs(g) {
   return a;
 }
 // Same grade tiles as the PSA card detail: "Card Grade / BGS 9.5 / GEM MINT", then the four sub-grades (+ autograph) as matching tiles
+const BGS_LABEL = {
+  '10': 'PRISTINE',
+  '9.5': 'GEM MINT',
+  '9': 'MINT',
+  '8.5': 'NM-MT+',
+  '8': 'NM-MT',
+  '7.5': 'NM+',
+  '7': 'NM'
+};
 function BgsGrades({
   g
 }) {
@@ -3939,15 +4174,9 @@ function BgsGrades({
   }, v), sub ? /*#__PURE__*/React.createElement("div", {
     className: "text-[13px] font-semibold uppercase tracking-wide text-muted-foreground"
   }, sub) : null);
-  const subs = bgsSubs(g).filter(([k]) => k !== 'Autograph');
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "mt-3 flex items-stretch justify-center gap-2.5"
-  }, tile('Card Grade', 'BGS ' + g.overall, '', 'o'), g.auto && tile('Autograph', g.auto, 'BGS', 'a')), /*#__PURE__*/React.createElement("div", {
-    className: "mt-2.5 grid grid-cols-2 gap-2.5"
-  }, subs.map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "flex"
-  }, tile(k, v, '', k)))));
+  }, tile('Card Grade', 'BGS ' + g.overall, BGS_LABEL[g.overall] || '', 'o'), g.auto && tile('Autograph', 'AUTO ' + g.auto, 'BGS', 'a')));
 }
 // One text row styled like the PSA items row (no thumbnail: BGS has no images; CGC has none until Completing)
 function ItemTextRow({
@@ -3983,19 +4212,30 @@ function ItemTextStrip({
   const bgs = graderOf(order) === 'BGS';
   return /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar -mx-5 flex items-stretch gap-2.5 overflow-x-auto px-5 pb-1"
-  }, items.map(it => /*#__PURE__*/React.createElement("button", {
+  }, items.map(it => bgs ? /*#__PURE__*/React.createElement("button", {
     key: it.cert,
     onClick: onOpen,
-    className: "flex h-[124px] w-[88px] shrink-0 flex-col justify-between rounded-[10px] border border-border bg-card p-2 text-left shadow-sm transition-transform active:scale-95"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-[9px] font-medium text-muted-foreground"
-  }, "#", it.cert), /*#__PURE__*/React.createElement("div", {
-    className: "mt-0.5 line-clamp-4 text-[10.5px] font-semibold leading-tight text-foreground"
-  }, bgs ? it.setName + ' ' + (it.player || '') : it.name)), bgs && showGrades && it.bgs && /*#__PURE__*/React.createElement("div", {
-    className: "text-[12px] font-extrabold text-foreground"
-  }, "BGS ", it.bgs.overall))), moreCount > 0 && /*#__PURE__*/React.createElement("button", {
+    className: "h-[92px] w-[66px] shrink-0 rounded-[8px] bg-gradient-to-br from-amber-200 to-amber-400 p-[2px] text-left shadow-sm transition-transform active:scale-95",
+    "aria-label": it.setName + ' ' + (it.player || '')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex h-full w-full items-center justify-center overflow-hidden rounded-[6px] bg-[linear-gradient(140deg,#F4B41A_0%,#F2701D_32%,#D92B3A_58%,#8A2A8F_85%,#5A2386_100%)]"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "assets/hobbyx-logo-white.png",
+    alt: "",
+    draggable: false,
+    className: "pointer-events-none w-[52px] max-w-none opacity-70"
+  }))) : /*#__PURE__*/React.createElement("button", {
+    key: it.cert,
     onClick: onOpen,
-    className: "flex h-[124px] w-[66px] shrink-0 flex-col items-center justify-center rounded-[10px] border border-dashed border-border bg-muted/60 text-center transition-colors hover:bg-muted"
+    className: "shrink-0 transition-transform active:scale-95"
+  }, /*#__PURE__*/React.createElement(CardImage, {
+    cert: it.cert,
+    category: it.category,
+    src: it.img,
+    className: "h-[92px] w-[66px] shadow-sm"
+  }))), moreCount > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: onOpen,
+    className: "h-[92px] flex w-[66px] shrink-0 flex-col items-center justify-center rounded-[10px] border border-dashed border-border bg-muted/60 text-center transition-colors hover:bg-muted"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-extrabold text-foreground"
   }, "+", moreCount), /*#__PURE__*/React.createElement("span", {
@@ -4153,38 +4393,34 @@ function DetailScreen({
     className: "text-[26px] font-extrabold leading-tight tracking-tight text-foreground"
   }, tx(order.service)), /*#__PURE__*/React.createElement("div", {
     className: "mt-1.5 text-[15px] font-semibold text-primary"
-  }, order.shipment || tx(order.category)), grader !== 'PSA' && /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 text-[13px] font-semibold text-muted-foreground"
-  }, grader === 'CGC' ? tx('Invoice') + ' #' + order.invoice + ' · ' + tx('Submission') + ' ' + order.num : tx('Submission') + ' ' + order.num), /*#__PURE__*/React.createElement("button", {
+  }, order.shipment || tx(order.category)), /*#__PURE__*/React.createElement("button", {
     onClick: openInvoiceGate,
-    className: "mt-5 flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/40 active:scale-[.99]"
+    className: "mt-5 flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-2 text-left transition-colors hover:bg-accent/40 active:scale-[.99]"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-primary",
+    className: "flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-secondary text-primary",
     "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "h-[18px] w-[18px]"
+    className: "h-4 w-4"
   }, Icon.doc)), /*#__PURE__*/React.createElement("span", {
     className: "flex-1 text-[15px] font-semibold text-foreground"
   }, tx('Invoices')), /*#__PURE__*/React.createElement("span", {
-    className: "flex h-6 min-w-[24px] items-center justify-center rounded-full bg-primary px-1.5 text-[12px] font-bold text-primary-foreground",
+    className: "flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground",
     "aria-label": invoiceList.length + ' ' + tx('Invoices')
   }, invoiceList.length), /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 text-muted-foreground",
     "aria-hidden": "true"
-  }, Icon.chevR)), !v2 && imagesReady && /*#__PURE__*/React.createElement("div", {
-    className: "mt-1.5 text-sm font-medium text-muted-foreground"
-  }, order.itemCount, " ", tx(order.itemCount === 1 ? 'item' : 'items')), !completed && !order.hideTurnaround && /*#__PURE__*/React.createElement("div", {
+  }, Icon.chevR)), !completed && !order.hideTurnaround && /*#__PURE__*/React.createElement("div", {
     className: "relative mt-4 rounded-lg border border-border bg-card"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 divide-x divide-border"
+    className: grader === 'CGC' ? 'grid grid-cols-1' : 'grid grid-cols-2 divide-x divide-border'
   }, /*#__PURE__*/React.createElement("div", {
-    className: "px-4 py-3"
+    className: grader === 'CGC' ? "flex items-center justify-between gap-3 px-4 py-3.5" : "px-4 py-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex min-h-[26px] items-start text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground"
+    className: (grader === 'CGC' ? "" : "flex min-h-[26px] items-start ") + "text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground"
   }, tx('Business Turnaround Days')), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1.5 text-sm font-semibold text-foreground"
+    className: (grader === 'CGC' ? "" : "mt-1.5 ") + "text-sm font-semibold text-foreground"
   }, order.turnaround || order.estDays)), /*#__PURE__*/React.createElement("div", {
-    className: "relative px-4 py-3"
+    className: 'relative px-4 py-3' + (grader === 'CGC' ? ' hidden' : '')
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex min-h-[26px] items-start pr-7 text-[11px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground",
     style: {
@@ -4225,7 +4461,7 @@ function DetailScreen({
     className: "h-4 w-4"
   }, Icon.chevR))), /*#__PURE__*/React.createElement("div", {
     className: imagesReady ? 'mt-3' : 'mt-6'
-  }, textMode && imagesReady ? /*#__PURE__*/React.createElement(grader === 'BGS' ? ItemTextList : ItemTextStrip, {
+  }, textMode && imagesReady ? /*#__PURE__*/React.createElement(ItemTextStrip, {
     order: order,
     items: previewItems,
     moreCount: moreCount,
@@ -4399,6 +4635,22 @@ function DetailScreen({
 }
 
 /* ---------- ITEMS ---------- */
+// Card-shaped text thumbnail for BGS items list (same frame as the detail-preview tiles, no image)
+function BgsThumb({
+  it,
+  ready
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "h-[74px] w-[53px] shrink-0 rounded-[7px] bg-gradient-to-br from-amber-200 to-amber-400 p-[2px] shadow-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative flex h-full w-full flex-col items-center justify-between overflow-hidden rounded-[5px] bg-[linear-gradient(140deg,#F4B41A_0%,#F2701D_32%,#D92B3A_58%,#8A2A8F_85%,#5A2386_100%)] py-1.5"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "assets/hobbyx-logo-white.png",
+    alt: "",
+    draggable: false,
+    className: "pointer-events-none absolute left-1/2 top-1/2 w-[44px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[.30]"
+  })));
+}
 function ItemsScreen({
   order,
   goBack,
@@ -4408,7 +4660,7 @@ function ItemsScreen({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: goBack,
-    title: order.itemCount + ' ' + tx(order.itemCount === 1 ? 'item' : 'items2')
+    title: order.itemCount + ' ' + tx(order.itemCount === 1 ? 'item' : 'items')
   }), /*#__PURE__*/React.createElement("div", {
     className: "no-scrollbar flex-1 overflow-y-auto px-5 pb-8"
   }, /*#__PURE__*/React.createElement("div", {
@@ -4419,7 +4671,10 @@ function ItemsScreen({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => openCard(i),
     className: "flex w-full items-center gap-3.5 text-left"
-  }, graderOf(order) === 'BGS' ? null : isGraded(it) ? /*#__PURE__*/React.createElement(Slab, {
+  }, graderOf(order) === 'BGS' ? /*#__PURE__*/React.createElement(BgsThumb, {
+    it: it,
+    ready: gradesReadyFor(order)
+  }) : isGraded(it) ? /*#__PURE__*/React.createElement(Slab, {
     item: it,
     className: "h-[74px] w-[53px] shrink-0 shadow-sm"
   }) : /*#__PURE__*/React.createElement(CardImage, {
@@ -4445,7 +4700,7 @@ function ItemsScreen({
     className: "mt-1 text-sm font-bold text-foreground"
   }, 'BGS ' + it.bgs.overall, /*#__PURE__*/React.createElement("span", {
     className: "font-semibold text-muted-foreground"
-  }, ' \xB7 ' + bgsSubs(it.bgs).map(([k, v]) => tx(k) + ' ' + v).join(' \xB7 '))) : null), /*#__PURE__*/React.createElement("span", {
+  }, ' \xB7 ' + (BGS_LABEL[it.bgs.overall] || '') + (it.bgs.auto ? ' \xB7 AUTO ' + it.bgs.auto : ''))) : null), /*#__PURE__*/React.createElement("span", {
     className: "h-4 w-4 shrink-0 text-muted-foreground"
   }, Icon.chevR)))))));
 }
@@ -4607,7 +4862,7 @@ function BgsItemDetail({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: close,
-    title: ready && item.certUrl ? /*#__PURE__*/React.createElement("button", {
+    title: item.certUrl ? /*#__PURE__*/React.createElement("button", {
       onClick: () => window.open(item.certUrl, '_blank', 'noopener,noreferrer'),
       className: "inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[15px] font-bold text-primary underline decoration-primary/40 decoration-1 underline-offset-[3px] transition-colors active:bg-primary/20"
     }, '#' + item.cert, /*#__PURE__*/React.createElement("span", {
@@ -4617,11 +4872,24 @@ function BgsItemDetail({
     className: "no-scrollbar flex flex-1 flex-col overflow-y-auto px-5 pb-8 pt-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 flex-col justify-center"
-  }, /*#__PURE__*/React.createElement("h1", {
-    className: "text-center text-[17px] font-bold leading-snug text-foreground"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center rounded-xl border border-border bg-muted/40 p-7"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mx-auto aspect-[0.62] w-[72%] rounded-[12px] bg-gradient-to-br from-amber-200 to-amber-400 p-[3px] shadow-md"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative flex h-full w-full flex-col items-center justify-between overflow-hidden rounded-[9px] bg-[linear-gradient(140deg,#F4B41A_0%,#F2701D_32%,#D92B3A_58%,#8A2A8F_85%,#5A2386_100%)] py-5"
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "assets/hobbyx-logo-white.png",
+    alt: "",
+    draggable: false,
+    className: "pointer-events-none absolute left-1/2 top-1/2 w-[84%] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[.30]"
+  })))), /*#__PURE__*/React.createElement("h1", {
+    className: "mt-5 text-center text-[17px] font-bold leading-snug text-foreground"
   }, item.setName + ' ' + (item.player || '')), ready && item.bgs ? /*#__PURE__*/React.createElement(BgsGrades, {
     g: item.bgs
-  }) : null)));
+  }) : /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-sm font-medium text-muted-foreground"
+  }, tx('Grades will be shown once they are ready.')))));
 }
 function CardDetail(props) {
   return graderOf(props.order) === 'BGS' ? /*#__PURE__*/React.createElement(BgsItemDetail, props) : /*#__PURE__*/React.createElement(CardDetailImg, props);
@@ -4665,7 +4933,7 @@ function CardDetailImg({
     className: "flex h-full flex-col bg-background"
   }, /*#__PURE__*/React.createElement(AppBar, {
     onBack: close,
-    title: graded && item.cert ? /*#__PURE__*/React.createElement("button", {
+    title: item.cert ? /*#__PURE__*/React.createElement("button", {
       onClick: () => {
         const a = document.createElement('a');
         a.href = item.certUrl || 'https://www.psacard.com/cert/' + item.cert + '/psa';
@@ -4724,7 +4992,9 @@ function CardDetailImg({
     className: 'min-w-[56px] rounded-md px-3 py-1.5 text-center text-[13px] font-semibold transition-colors ' + (i === view ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground')
   }, tx(v)))), /*#__PURE__*/React.createElement("h1", {
     className: "mt-5 text-center text-[17px] font-bold leading-snug text-foreground"
-  }, tx(item.name)), notGraded && /*#__PURE__*/React.createElement("div", {
+  }, tx(item.name)), graderOf(order) === 'CGC' && !graded && !notGraded && !item.ineligible && /*#__PURE__*/React.createElement("p", {
+    className: "mt-3 text-center text-sm font-medium text-muted-foreground"
+  }, tx('Grades and images will be shown once they are ready.')), notGraded && /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded-lg border border-border bg-card px-3 py-4 text-center"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
@@ -7606,7 +7876,7 @@ function GradingApp({
         localStorage.removeItem('hobbyx_keep');
       } catch (e) {}
       setDeletionPending(null);
-      window.location.href = 'index.html';
+      window.location.href = 'HobbyX Multi-Grader (Sample 1).html';
     }
   }) : /*#__PURE__*/React.createElement(React.Fragment, null, top.name === 'list' && /*#__PURE__*/React.createElement(ListScreen, {
     sample: sample,
@@ -7659,7 +7929,7 @@ function GradingApp({
       try {
         localStorage.removeItem('hobbyx_keep');
       } catch (e) {}
-      window.location.href = 'index.html';
+      window.location.href = 'HobbyX Multi-Grader (Sample 1).html';
     },
     onDeleteAccount: () => {},
     onDeletionScheduled: email => setDeletionPending(email)
@@ -7802,32 +8072,6 @@ function resolveAppearanceTheme(pref) {
   if (pref === 'dark' || pref === 'light') return pref;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
-/* Grader switcher — lives OUTSIDE the phone, design-time control only.
-   Publishes the choice as window.HX_GRADER, <html data-grader>, and a 'hobbyx-grader' event. */
-const GRADERS = [['S1', 'Sample 1'], ['S2', 'Sample 2'], ['S3', 'Sample 3'], ['S4', 'Sample 4'], ['S5', 'Sample 5']];
-function GraderPicker({
-  value,
-  onChange
-}) {
-  return React.createElement("label", {
-    className: "inline-flex items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1 shadow-md ring-1 ring-black/5"
-  }, React.createElement("span", {
-    className: "text-[11px] font-extrabold uppercase tracking-wider text-neutral-500"
-  }, "Samples"), React.createElement("span", {
-    className: "relative inline-flex"
-  }, React.createElement("select", {
-    value: value,
-    onChange: e => onChange(e.target.value),
-    "aria-label": "Sample",
-    className: "cursor-pointer appearance-none rounded-full bg-neutral-900 py-1.5 pl-3.5 pr-9 text-sm font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-  }, GRADERS.map(([k, l]) => React.createElement("option", {
-    key: k,
-    value: k
-  }, l))), React.createElement("span", {
-    className: "pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white",
-    "aria-hidden": "true"
-  }, Icon.chevD)));
-}
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   useLang(); // re-render whole tree when language changes
@@ -7842,26 +8086,6 @@ function App() {
   const [phase, setPhase] = useRootState('auth'); // auth | app
   const [booting, setBooting] = useRootState(true); // full-screen splash overlay (covers status bar)
   const [simOffline, setSimOffline] = useRootState(false);
-  const [grader, setGrader] = useRootState(() => {
-    try {
-      const g = localStorage.getItem('hobbyx_grader');
-      return GRADERS.some(([k]) => k === g) ? g : 'S1';
-    } catch (e) {
-      return 'S1';
-    }
-  });
-  useRootEffect(() => {
-    window.HX_GRADER = grader;
-    document.documentElement.setAttribute('data-grader', grader);
-    try {
-      localStorage.setItem('hobbyx_grader', grader);
-    } catch (e) {}
-    window.dispatchEvent(new CustomEvent('hobbyx-grader', {
-      detail: {
-        grader
-      }
-    }));
-  }, [grader]);
   const realOnline = useOnline();
   const offline = simOffline || !realOnline;
   const [scale, setScale] = useRootState(1);
@@ -7917,10 +8141,7 @@ function App() {
     style: {
       flex: '0 0 auto'
     }
-  }, /*#__PURE__*/React.createElement(GraderPicker, {
-    value: grader,
-    onChange: setGrader
-  }), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     className: "inline-flex items-center gap-1 rounded-full bg-white p-1 shadow-md ring-1 ring-black/5"
   }, [['auth', 'Auth'], ['app', 'Grading'], ['empty', 'Empty Grading'], ['gradingonly', 'Only Grading'], ['loading', 'Loading']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
     key: k,
@@ -7980,7 +8201,7 @@ function App() {
     offline: offline,
     empty: phase === 'empty',
     gradingOnly: phase === 'gradingonly',
-    sample: grader,
+    sample: 'S1',
     skeleton: phase === 'loading'
   })), /*#__PURE__*/React.createElement(Toaster, null), /*#__PURE__*/React.createElement("div", {
     className: "pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[135px] -translate-x-1/2 rounded-full bg-foreground/30"
